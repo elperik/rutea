@@ -1,10 +1,14 @@
 # 010_GRABADOR_SESION_Y_SELECTORES
 
-Estado: En desarrollo
+Estado: Implementado
 Prioridad: Alta
 Responsable: Agente (sesión Claude Code) con supervisión de elperik
 Dependencias: `009_CIERRE_FASE_0`, `001_PROPUESTA_FUNCIONAL_TECNICA`, `004_MODELO_DE_RUTINAS_Y_EJECUCION`
 Última revisión: 2026-06-27
+
+Commit/PR: PR #2 (merge `86b1b10`)
+Verificación: 31 tests Vitest + lint/typecheck/build verdes (local y CI). Probado en vivo en Chrome: grabación con permiso por sitio, selectores explicados, dedup y redacción; negociación `hello` con el host Java a través de Native Messaging.
+Riesgo residual: sin continuidad entre navegaciones todavía (iniciativa 011); sin E2E automatizado de navegador; el permiso `tabs` da visibilidad de URLs de pestañas (coste aceptado para acotar la petición por origen).
 
 ## 1. Problema
 
@@ -85,8 +89,10 @@ Total Vitest tras el slice: 31 pruebas verdes (local).
 
 ## 15. Resultado implementado
 
-Completar al mover a `implementado`.
+Entregado: sesión de grabación persistente por pestaña (`storage.session`), permiso de host por sitio en runtime, módulos puros `selectors.ts` (ranking con explicación) y `steps.ts` (dedup), `signals.ts` (recolección DOM), `recorder.ts` integrado con redacción y resaltado, panel con estado de grabación, y `register-chrome-host-dev.ps1` para probar el host. 13 pruebas nuevas (31 totales).
 
-Commit/PR: Pendiente
-Verificación: Pendiente
-Riesgo residual: Pendiente
+Componentes nuevos: `extension/src/content/{selectors,signals,steps}.ts` (+ tests), cambios en `recorder.ts`, `service-worker.ts`, `main.ts`, `manifest.json`, y `native-host/scripts/register-chrome-host-dev.ps1`.
+
+Commit/PR: PR #2 (merge `86b1b10`).
+Verificación: local + CI verdes; prueba manual en Chrome del vertical extensión↔host.
+Riesgo residual: continuidad entre navegaciones pendiente (011); sin E2E automatizado.

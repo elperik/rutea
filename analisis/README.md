@@ -65,6 +65,7 @@ Contiene la memoria técnica de funcionalidades concluidas. El documento se muev
 
 - [`implementado/000_ANDAMIAJE_INICIAL.md`](implementado/000_ANDAMIAJE_INICIAL.md): andamiaje inicial del proyecto.
 - [`implementado/009_CIERRE_FASE_0.md`](implementado/009_CIERRE_FASE_0.md): cierre de la Fase 0 (contratos validados en ambos lados, tipos y validadores generados, fixtures y primera suite de pruebas).
+- [`implementado/010_GRABADOR_SESION_Y_SELECTORES.md`](implementado/010_GRABADOR_SESION_Y_SELECTORES.md): grabador con sesión persistente, permiso por sitio, selectores explicados, dedup y redacción.
 
 ## Orden de lectura para agentes
 
