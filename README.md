@@ -75,15 +75,26 @@ rutea/
 ├── extension/       Extensión Chrome Manifest V3
 ├── native-host/     Proceso local Java y Native Messaging
 ├── shared/          Contratos y esquemas JSON
-├── analisis/        Decisiones, alcance y arquitectura
+├── analisis/
+│   ├── pendiente/       Iniciativas analizadas no iniciadas
+│   ├── en_desarrollo/   Iniciativas activas
+│   └── implementado/    Memoria técnica de trabajo terminado
 ├── .codex/agents/   Agentes especializados para Codex
 ├── .vscode/         Configuración y tareas de VS Code
 ├── AGENTS.md        Contexto persistente para agentes
 └── CLAUDE.md        Entrada de contexto para Claude Code
 ```
 
+## Documentación técnica
+
+Consulta [`analisis/README.md`](analisis/README.md) para conocer el estado del proyecto y el orden de lectura. Las iniciativas se documentan con un ciclo único:
+
+```text
+pendiente -> en_desarrollo -> implementado
+```
+
+La propuesta funcional y técnica, el plan de desarrollo, la arquitectura, el modelo de rutinas, la seguridad, las librerías candidatas y la estrategia de pruebas están desarrollados dentro de `analisis/pendiente/`.
+
 ## Estado
 
 El repositorio contiene el andamiaje inicial del MVP. La prioridad es construir primero un motor determinista de rutinas; la IA se incorporará como apoyo para interpretar, reparar selectores y resolver ambigüedades, nunca como ejecutor libre de acciones arbitrarias.
-
-Consulta [`analisis/README.md`](analisis/README.md) antes de tomar decisiones de arquitectura o ampliar el alcance.
