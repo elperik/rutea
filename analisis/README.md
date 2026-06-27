@@ -61,6 +61,10 @@ Contiene la memoria técnica de funcionalidades concluidas. El documento se muev
 6. [`pendiente/006_LIBRERIAS_Y_HERRAMIENTAS.md`](pendiente/006_LIBRERIAS_Y_HERRAMIENTAS.md): catálogo inicial y política abierta de dependencias.
 7. [`pendiente/007_ESTRATEGIA_DE_PRUEBAS.md`](pendiente/007_ESTRATEGIA_DE_PRUEBAS.md): pruebas unitarias, integración, extensión, navegador y seguridad.
 
+## En desarrollo
+
+- [`en_desarrollo/009_CIERRE_FASE_0.md`](en_desarrollo/009_CIERRE_FASE_0.md): cierre de la Fase 0 (contratos validados en ambos lados, tipos generados, fixtures y primera suite de pruebas).
+
 ## Estado ya implementado
 
 El andamiaje existente está resumido en [`implementado/000_ANDAMIAJE_INICIAL.md`](implementado/000_ANDAMIAJE_INICIAL.md).

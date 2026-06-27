@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fixtures de Rutea</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header>
+      <h1>Fixtures de Rutea</h1>
+      <p>Banco de pruebas determinista. Semilla actual: <code id="seed-value">—</code></p>
+      <nav aria-label="Vistas">
+        <button type="button" data-view="vista-a">Vista A</button>
+        <button type="button" data-view="vista-b">Vista B</button>
+      </nav>
+    </header>
+
+    <main>
+      <section id="formulario" aria-labelledby="formulario-title">
+        <h2 id="formulario-title">Formulario con labels y ARIA</h2>
+        <form id="form-consulta" autocomplete="off">
+          <p>
+            <label for="nombre">Nombre completo</label>
+            <input id="nombre" name="nombre" type="text" />
+          </p>
+          <p>
+            <label for="email">Correo electrónico</label>
+            <input id="email" name="email" type="email" aria-describedby="email-help" />
+            <span id="email-help">No se envía a ningún servidor.</span>
+          </p>
+          <p>
+            <label for="password">Contraseña (debe redactarse al grabar)</label>
+            <input id="password" name="password" type="password" />
+          </p>
+          <p>
+            <label for="pais">País</label>
+            <select id="pais" name="pais">
+              <option value="">Selecciona…</option>
+              <option value="es">España</option>
+              <option value="pt">Portugal</option>
+              <option value="fr">Francia</option>
+            </select>
+          </p>
+          <fieldset>
+            <legend>Preferencias</legend>
+            <label><input type="checkbox" name="boletin" /> Recibir boletín</label>
+            <label><input type="radio" name="canal" value="email" /> Email</label>
+            <label><input type="radio" name="canal" value="sms" /> SMS</label>
+          </fieldset>
+          <button id="enviar-consulta" type="submit">Enviar consulta</button>
+        </form>
+      </section>
+
+      <section id="dinamicos" aria-labelledby="dinamicos-title">
+        <h2 id="dinamicos-title">IDs dinámicos (deterministas por semilla)</h2>
+        <button type="button" data-testid="accion-estable">Acción con data-testid estable</button>
+        <button type="button" id="btn-dyn-placeholder">Acción con id dinámico</button>
+      </section>
+
+      <section id="lista" aria-labelledby="lista-title">
+        <h2 id="lista-title">Lista que reordena</h2>
+        <button id="reordenar" type="button">Reordenar</button>
+        <ul id="lista-items"></ul>
+      </section>
+
+      <section id="shadow" aria-labelledby="shadow-title">
+        <h2 id="shadow-title">Shadow DOM abierto</h2>
+        <div id="shadow-host"></div>
+      </section>
+
+      <section id="iframe" aria-labelledby="iframe-title">
+        <h2 id="iframe-title">iframe mismo origen</h2>
+        <iframe src="iframe.html" title="Fixture iframe" width="100%" height="120"></iframe>
+      </section>
+
+      <section id="vista" aria-labelledby="vista-title">
+        <h2 id="vista-title">Navegación tipo SPA</h2>
+        <div id="vista-a" class="vista" data-active="true">
+          <p>Estás en la Vista A.</p>
+        </div>
+        <div id="vista-b" class="vista" data-active="false" hidden>
+          <p>Estás en la Vista B.</p>
+        </div>
+      </section>
+
+      <section id="modal" aria-labelledby="modal-title">
+        <h2 id="modal-title">Modal</h2>
+        <button id="abrir-modal" type="button">Abrir modal</button>
+        <dialog id="dialogo">
+          <p>Contenido del modal.</p>
+          <button id="cerrar-modal" type="button">Cerrar</button>
+        </dialog>
+      </section>
+
+      <section id="resultado" aria-labelledby="resultado-title">
+        <h2 id="resultado-title">Mensajes de éxito y error</h2>
+        <button id="provocar-exito" type="button">Provocar éxito</button>
+        <button id="provocar-error" type="button">Provocar error</button>
+        <p id="mensaje-resultado" role="status"></p>
+      </section>
+
+      <section id="irreversible" aria-labelledby="irreversible-title">
+        <h2 id="irreversible-title">Acción irreversible simulada</h2>
+        <button id="borrar-todo" type="button" class="danger">Borrar todo (simulado)</button>
+        <p id="irreversible-status" role="status">Nada borrado</p>
+      </section>
+
+      <section id="captcha" aria-labelledby="captcha-title">
+        <h2 id="captcha-title">CAPTCHA ficticio (debe pausar la rutina)</h2>
+        <div data-rutea-pause="captcha" role="group" aria-label="Verificación humana">
+          <p>Marca la casilla para continuar.</p>
+          <label><input id="captcha-check" type="checkbox" /> No soy un robot</label>
+        </div>
+      </section>
+
+      <section id="ambiguo" aria-labelledby="ambiguo-title">
+        <h2 id="ambiguo-title">Elementos ambiguos</h2>
+        <button type="button">Guardar</button>
+        <button type="button">Guardar</button>
+        <button type="button">Guardar</button>
+      </section>
+    </main>
+
+    <script type="module" src="app.js"></script>
+  </body>
+</html>

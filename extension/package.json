@@ -2,15 +2,31 @@
   "name": "rutea-extension",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "description": "Extensión Chrome de Rutea para grabar y ejecutar rutinas web.",
   "scripts": {
     "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
-    "build": "npm run clean && tsc -p tsconfig.json && node scripts/copy-static.mjs",
-    "watch": "tsc -p tsconfig.json --watch",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "contracts": "node scripts/generate-contracts.mjs",
+    "build": "npm run clean && npm run contracts && node scripts/build.mjs && node scripts/copy-static.mjs",
+    "typecheck": "npm run contracts && tsc -p tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "npm run contracts && vitest run"
   },
+  "dependencies": {},
   "devDependencies": {
+    "@eslint/js": "^9.17.0",
     "@types/chrome": "^0.0.287",
-    "typescript": "^5.7.3"
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1",
+    "esbuild": "^0.24.2",
+    "eslint": "^9.17.0",
+    "globals": "^15.14.0",
+    "json-schema-to-typescript": "^15.0.4",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.19.0",
+    "vitest": "^2.1.8"
   }
 }

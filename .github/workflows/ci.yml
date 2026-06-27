@@ -17,6 +17,10 @@ jobs:
         with:
           node-version: 22
       - run: npm install
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
       - run: npm run build
 
   native-host:

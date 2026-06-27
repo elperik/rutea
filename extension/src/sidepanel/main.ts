@@ -17,7 +17,9 @@ const stepCountElement = getElement("step-count");
 startButton.addEventListener("click", () => runCommand("START_RECORDING", "Grabando"));
 stopButton.addEventListener("click", () => runCommand("STOP_RECORDING", "Grabación detenida"));
 clearButton.addEventListener("click", () => runCommand("CLEAR_RECORDING", "Pasos eliminados"));
-pingHostButton.addEventListener("click", () => runCommand("PING_NATIVE_HOST", "Host Java conectado"));
+pingHostButton.addEventListener("click", () =>
+  runCommand("PING_NATIVE_HOST", "Host Java conectado")
+);
 
 chrome.storage.onChanged.addListener((changes, areaName) => {
   const change = changes[STORAGE_KEY];
