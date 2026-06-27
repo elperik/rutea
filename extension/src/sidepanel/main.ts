@@ -20,8 +20,9 @@ clearButton.addEventListener("click", () => runCommand("CLEAR_RECORDING", "Pasos
 pingHostButton.addEventListener("click", () => runCommand("PING_NATIVE_HOST", "Host Java conectado"));
 
 chrome.storage.onChanged.addListener((changes, areaName) => {
-  if (areaName === "local" && changes[STORAGE_KEY]) {
-    renderSteps(changes[STORAGE_KEY].newValue);
+  const change = changes[STORAGE_KEY];
+  if (areaName === "local" && change) {
+    renderSteps(change.newValue);
   }
 });
 
