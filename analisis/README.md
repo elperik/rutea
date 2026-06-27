@@ -1,175 +1,87 @@
-# Análisis inicial de Rutea
+# Análisis y evolución de Rutea
 
-## 1. Objetivo
+Esta carpeta es la fuente canónica para el análisis funcional, técnico y operativo de Rutea. Su objetivo no es acumular notas, sino permitir que desarrolladores y agentes autónomos entiendan rápidamente qué está decidido, qué se está construyendo, qué falta y con qué evidencia se considera terminado.
 
-Rutea debe permitir que un usuario grabe y reutilice rutinas sobre webs concretas: navegación, clics, cumplimentación de campos, selección de opciones, esperas, validaciones y confirmaciones.
-
-El producto debe asistir al usuario, no sustituir indiscriminadamente su criterio. La prioridad es que cada ejecución sea explicable, verificable y recuperable.
-
-## 2. Arquitectura inicial
-
-### Extensión Chrome
-
-Tecnología: TypeScript, HTML, CSS y Manifest V3.
-
-Responsabilidades:
-
-- capturar eventos DOM durante la grabación;
-- construir descriptores semánticos de los elementos;
-- reproducir acciones simples en la pestaña activa;
-- resaltar el elemento seleccionado;
-- mostrar rutinas, estado, errores y confirmaciones;
-- comunicarse con el host local mediante Native Messaging.
-
-### Host local Java
-
-Tecnología: Java 21, Maven y `jpackage`.
-
-Responsabilidades futuras:
-
-- persistencia SQLite;
-- cifrado y acceso a secretos del sistema;
-- integración con proveedores de IA;
-- historial, auditoría y versionado de rutinas;
-- acceso controlado a archivos locales;
-- automatización complementaria con Playwright Java;
-- importación, exportación y copias de seguridad.
-
-La primera base implementa el protocolo Native Messaging y una respuesta de diagnóstico. Persistencia e IA se incorporarán por incrementos.
-
-### Contratos compartidos
-
-Los formatos de rutina y de mensajes deben definirse en `shared/` mediante JSON Schema y versionarse explícitamente. Cualquier modificación incompatible requerirá migración o soporte simultáneo de versiones.
-
-## 3. Decisiones reutilizadas del proyecto intranet
-
-Se reutilizan los principios operativos que han resultado útiles, no los detalles específicos del ERP:
-
-- `AGENTS.md` actúa como router de contexto y no como almacén de análisis extensos;
-- documentación canónica separada en una carpeta de análisis;
-- agentes especializados para desarrollo, revisión, UI y mantenimiento documental;
-- plan breve antes de cambios estructurales;
-- inspección de patrones vecinos antes de crear una solución nueva;
-- cambios pequeños e incrementales;
-- verificación proporcional al riesgo;
-- Playwright como prueba principal de flujos visibles;
-- salida final diferenciando implementación, pruebas y riesgos no verificados;
-- prohibición de copiar credenciales o configuraciones específicas.
-
-No se han trasladado credenciales, empresas, rutas, MCP ni reglas PHP de la intranet porque no pertenecen a Rutea.
-
-## 4. Principio central
-
-El motor determinista ejecuta la rutina. La IA se utilizará únicamente cuando aporte una de estas capacidades:
-
-- convertir una intención del usuario en una propuesta de pasos;
-- mapear datos a campos;
-- localizar un elemento cuando los selectores guardados han dejado de funcionar;
-- interpretar un mensaje de error;
-- proponer una reparación que el motor pueda validar.
-
-La salida de IA debe ser estructurada y pertenecer a un catálogo cerrado de acciones. No se ejecutará JavaScript, comandos ni URLs arbitrarias generadas por un modelo.
-
-## 5. Alcance del MVP
-
-Incluido:
-
-- extensión cargable en modo desarrollador;
-- panel lateral;
-- grabación básica de clics y cambios de campo;
-- almacenamiento temporal en `chrome.storage.local`;
-- visualización y limpieza de pasos;
-- host Java empaquetable;
-- prueba de comunicación Native Messaging;
-- esquema inicial de rutinas;
-- build desde VS Code y CI.
-
-Fuera del primer incremento:
-
-- ejecución autónoma desatendida;
-- sincronización en nube;
-- varios usuarios;
-- marketplace de rutinas;
-- evasión de CAPTCHA o segundo factor;
-- acciones económicas sin confirmación;
-- almacenamiento definitivo de credenciales;
-- integración real con modelos de IA.
-
-## 6. Catálogo previsto de acciones
+## Estructura por estado
 
 ```text
-navigate
-click
-fill
-select
-check
-upload
-download
-wait
-assert
-ask_user
+analisis/
+├── pendiente/       Trabajo analizado pero aún no iniciado
+├── en_desarrollo/   Trabajo activo y con alcance comprometido
+├── implementado/    Trabajo terminado, verificado y trazable
+├── CONVENCIONES_DE_TRABAJO.md
+└── PLANTILLA_TAREA.md
 ```
 
-Cada paso deberá incluir, según proceda:
+### `pendiente/`
 
-- identificador y versión;
-- URL o patrón de dominio autorizado;
-- descriptor semántico del objetivo;
-- selectores alternativos;
-- valor fijo, variable o secreto referenciado;
-- precondición;
-- postcondición;
-- política de reintento;
-- nivel de riesgo;
-- necesidad de confirmación.
+Contiene propuestas, decisiones abiertas, diseños y fases todavía no iniciadas. Un documento pendiente puede ser amplio, pero debe identificar claramente:
 
-## 7. Seguridad
+- problema y objetivo;
+- alcance y exclusiones;
+- decisiones propuestas y alternativas;
+- dependencias;
+- riesgos;
+- criterios de aceptación;
+- orden recomendado de ejecución.
 
-Condiciones mínimas:
+### `en_desarrollo/`
 
-- lista blanca de dominios;
-- permisos de Chrome mínimos;
-- claves API y credenciales fuera de la extensión;
-- referencias a secretos, nunca el secreto dentro de una rutina exportada;
-- redacción de datos antes de enviar contexto a una IA;
-- confirmación de acciones irreversibles;
-- auditoría de pasos y resultados;
-- límites de intentos, tiempo y coste;
-- pausa ante CAPTCHA o autenticación adicional;
-- no registrar valores de campos de contraseña;
-- separación estricta entre logs y `stdout` del host nativo.
+Solo debe contener iniciativas que estén siendo implementadas. Al iniciar un trabajo se mueve el mismo archivo desde `pendiente/`; no se crea una copia.
 
-## 8. Fases propuestas
+El documento debe actualizarse con:
 
-1. Consolidar grabador y formato de pasos.
-2. Añadir editor de rutinas y variables.
-3. Crear reproductor determinista con postcondiciones.
-4. Persistir rutinas e historial en SQLite desde Java.
-5. Añadir gestión segura de secretos.
-6. Incorporar recuperación de selectores asistida por IA.
-7. Añadir Playwright Java para flujos que excedan las capacidades de la extensión.
-8. Preparar firma, instalador y distribución controlada.
+- alcance exacto comprometido;
+- plan de implementación;
+- archivos o componentes afectados;
+- decisiones tomadas durante el desarrollo;
+- checklist de avance;
+- pruebas previstas y ejecutadas;
+- bloqueos o cambios de alcance.
 
-## 9. Riesgos principales
+### `implementado/`
 
-- selectores frágiles y páginas con DOM muy dinámico;
-- iframes de terceros y shadow DOM;
-- reinicio del service worker de Manifest V3;
-- pérdida de contexto entre navegaciones;
-- webs que prohíban o detecten automatización;
-- exposición involuntaria de datos a modelos externos;
-- diferencias entre grabar una acción y verificar su efecto real;
-- falsas reparaciones propuestas por IA;
-- distribución y actualización coordinada de extensión y host local.
+Contiene la memoria técnica de funcionalidades concluidas. El documento se mueve desde `en_desarrollo/` cuando se cumplen los criterios de aceptación y debe registrar:
 
-## 10. Criterio de éxito del primer prototipo
+- comportamiento realmente entregado;
+- archivos y contratos principales;
+- commit o PR relacionado;
+- pruebas y evidencias;
+- migraciones o pasos de instalación;
+- limitaciones conocidas;
+- deuda técnica y trabajo posterior.
 
-En una web local de prueba, el usuario debe poder:
+## Documentos principales pendientes
 
-1. abrir el panel de Rutea;
-2. iniciar una grabación;
-3. realizar varios clics y cambios en campos;
-4. detener la grabación;
-5. ver pasos con descriptor y URL;
-6. limpiar los pasos;
-7. obtener respuesta del host Java mediante Native Messaging.
+1. [`pendiente/001_PROPUESTA_FUNCIONAL_TECNICA.md`](pendiente/001_PROPUESTA_FUNCIONAL_TECNICA.md): visión profunda del producto y características básicas.
+2. [`pendiente/002_PLAN_DESARROLLO_POR_FASES.md`](pendiente/002_PLAN_DESARROLLO_POR_FASES.md): orden de construcción, entregables y criterios de salida.
+3. [`pendiente/003_ARQUITECTURA_Y_LIMITES.md`](pendiente/003_ARQUITECTURA_Y_LIMITES.md): componentes, responsabilidades y flujos de datos.
+4. [`pendiente/004_MODELO_DE_RUTINAS_Y_EJECUCION.md`](pendiente/004_MODELO_DE_RUTINAS_Y_EJECUCION.md): dominio, estados, selectores, variables y postcondiciones.
+5. [`pendiente/005_SEGURIDAD_PRIVACIDAD_Y_PERMISOS.md`](pendiente/005_SEGURIDAD_PRIVACIDAD_Y_PERMISOS.md): amenazas, controles y tratamiento de secretos.
+6. [`pendiente/006_LIBRERIAS_Y_HERRAMIENTAS.md`](pendiente/006_LIBRERIAS_Y_HERRAMIENTAS.md): catálogo inicial y política abierta de dependencias.
+7. [`pendiente/007_ESTRATEGIA_DE_PRUEBAS.md`](pendiente/007_ESTRATEGIA_DE_PRUEBAS.md): pruebas unitarias, integración, extensión, navegador y seguridad.
+
+## Estado ya implementado
+
+El andamiaje existente está resumido en [`implementado/000_ANDAMIAJE_INICIAL.md`](implementado/000_ANDAMIAJE_INICIAL.md).
+
+## Orden de lectura para agentes
+
+Para una tarea ordinaria:
+
+1. `AGENTS.md`.
+2. Este índice.
+3. El documento de la iniciativa en su carpeta de estado.
+4. Los documentos temáticos enlazados por esa iniciativa.
+5. Los archivos de código afectados y sus vecinos.
+
+Para arquitectura, seguridad, contratos o cambios multi-componente, leer además `CONVENCIONES_DE_TRABAJO.md` antes de editar.
+
+## Principios no negociables
+
+- Motor determinista primero; IA como asistencia restringida.
+- Contratos versionados entre extensión, host y futuros proveedores.
+- Permisos mínimos y secretos fuera de la extensión.
+- Acciones sensibles con confirmación y auditoría.
+- Ningún trabajo se considera terminado sin verificación proporcional al riesgo.
+- La documentación refleja el sistema real; no se documentan capacidades inexistentes como si estuvieran implementadas.
