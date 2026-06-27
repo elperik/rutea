@@ -6,6 +6,12 @@ import {
   withinSizeLimit,
   type NativeMessage
 } from "../contracts/index.js";
+import { contentScriptId, originMatchPattern } from "./origins.js";
+
+interface RecordingSession {
+  startedAt: string;
+  origin?: string;
+}
 
 type RuteaMessage =
   | { type: "START_RECORDING" }
@@ -66,16 +72,16 @@ async function handleMessage(
 
 // Sesiones de grabación persistidas por pestaña. Sobreviven al reinicio del
 // service worker (storage.session) sin exponerse a los content scripts.
-async function readSessions(): Promise<Record<string, { startedAt: string }>> {
+async function readSessions(): Promise<Record<string, RecordingSession>> {
   const stored = await chrome.storage.session.get(SESSION_KEY);
   const value = stored[SESSION_KEY];
-  return isRecord(value) ? (value as Record<string, { startedAt: string }>) : {};
+  return isRecord(value) ? (value as Record<string, RecordingSession>) : {};
 }
 
-async function setTabRecording(tabId: number, active: boolean): Promise<void> {
+async function setTabRecording(tabId: number, active: boolean, origin?: string): Promise<void> {
   const sessions = await readSessions();
   if (active) {
-    sessions[String(tabId)] = { startedAt: new Date().toISOString() };
+    sessions[String(tabId)] = { startedAt: new Date().toISOString(), origin };
   } else {
     delete sessions[String(tabId)];
   }
@@ -105,7 +111,14 @@ async function startRecording(): Promise<RuteaResponse> {
     return { ok: false, error: "La pestaña activa no tiene identificador" };
   }
 
-  await setTabRecording(tab.id, true);
+  const origin = httpOrigin(tab.url);
+  await setTabRecording(tab.id, true, origin);
+
+  // Registro dinámico: reinyecta el grabador tras navegaciones dentro del
+  // origen autorizado, manteniendo la grabación entre cambios de documento.
+  if (origin) {
+    await registerRecorderForOrigin(origin);
+  }
 
   await chrome.scripting.executeScript({
     target: { tabId: tab.id },
@@ -122,7 +135,13 @@ async function stopRecording(): Promise<RuteaResponse> {
     return { ok: false, error: "La pestaña activa no tiene identificador" };
   }
 
+  const sessions = await readSessions();
+  const origin = sessions[String(tab.id)]?.origin;
+
   await setTabRecording(tab.id, false);
+  if (origin) {
+    await unregisterRecorderForOriginIfUnused(origin);
+  }
 
   try {
     await chrome.tabs.sendMessage(tab.id, { type: "RUTEA_STOP_RECORDING" });
@@ -130,6 +149,48 @@ async function stopRecording(): Promise<RuteaResponse> {
   } catch {
     // El content script pudo desaparecer (recarga); la sesión ya quedó cerrada.
     return { ok: true };
+  }
+}
+
+// Origen http/https de una URL, o undefined si no aplica.
+function httpOrigin(url: string | undefined): string | undefined {
+  if (!url) {
+    return undefined;
+  }
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === "http:" || parsed.protocol === "https:" ? parsed.origin : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+async function registerRecorderForOrigin(origin: string): Promise<void> {
+  const id = contentScriptId(origin);
+  const existing = await chrome.scripting.getRegisteredContentScripts({ ids: [id] });
+  if (existing.length > 0) {
+    return;
+  }
+  await chrome.scripting.registerContentScripts([
+    {
+      id,
+      matches: [originMatchPattern(origin)],
+      js: ["content/recorder.js"],
+      runAt: "document_idle"
+    }
+  ]);
+}
+
+async function unregisterRecorderForOriginIfUnused(origin: string): Promise<void> {
+  const sessions = await readSessions();
+  const stillUsed = Object.values(sessions).some((session) => session.origin === origin);
+  if (stillUsed) {
+    return;
+  }
+  try {
+    await chrome.scripting.unregisterContentScripts({ ids: [contentScriptId(origin)] });
+  } catch {
+    // El script podía no estar registrado; no es un error operativo.
   }
 }
 
