@@ -99,9 +99,9 @@ Pendiente de completar la tabla de aprobación de `006 §5` para cada una en el 
 
 ## 11. Pruebas
 
-- [x] unitarias TS del validador (18 casos) — verificadas en local (Vitest 2.1.9);
-- [x] contrato (sobre, respuesta, hello, rutina) — verificadas en local;
-- [~] unitarias Java (codec, validador, negociación) — escritas; **verificación pendiente en CI**;
+- [x] unitarias TS del validador (18 casos) — verificadas en local (Vitest 2.1.9) y en CI;
+- [x] contrato (sobre, respuesta, hello, rutina) — verificadas en local y en CI;
+- [x] unitarias Java (codec, validador, negociación) — 11 casos verdes en local (JDK 21 + Maven 3.9.16) y en CI;
 - [ ] E2E/UI: diferida a Fase 1 (solo se prepara el sitio de fixtures);
 - [x] seguridad: payloads malformados, sobredimensionados y campos desconocidos cubiertos en TS y Java.
 
@@ -125,7 +125,7 @@ Pendiente de completar la tabla de aprobación de `006 §5` para cada una en el 
 ## 14. Decisiones y cambios durante el desarrollo
 
 - 2026-06-27: fuente de verdad de contratos = **JSON Schema** (resuelve decisión abierta de `006 §2`).
-- 2026-06-27: el entorno local solo dispone de JDK 17 y carece de Maven; la verificación del host Java se hará en CI hasta instalar JDK 21 + Maven.
+- 2026-06-27: inicialmente el entorno local solo tenía JDK 17 sin Maven; tras instalar JDK 21 (`C:\Program Files\Java\jdk-21.0.10`) y Maven 3.9.16 (`C:\apache-maven-3.9.16`), el host Java se verifica también en local. CI (PR #1) y local: extensión y host en verde.
 - 2026-06-27: **CSP de Manifest V3** impide la compilación de esquemas en runtime con Ajv (`new Function`). Decisión: precompilar validadores **standalone** en build (sin `eval`) y empaquetar con **esbuild**. Se verificó que el bundle no contiene `eval`/`new Function` reales.
 - 2026-06-27: el build de la extensión pasa de `tsc`-emit a **esbuild** (anticipado por `006 §2`). `tsc` queda solo para typecheck. Tres entrypoints: service worker y panel como ESM; `recorder` como IIFE por inyectarse como fichero suelto.
 - 2026-06-27: contratos generados (`types.ts`, `validators.generated.*`) tratados como artefactos de build e ignorados en Git; se regeneran en `contracts`/`build`/`test`/`typecheck`.
