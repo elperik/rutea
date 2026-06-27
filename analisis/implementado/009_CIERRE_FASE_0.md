@@ -1,10 +1,14 @@
 # 009_CIERRE_FASE_0
 
-Estado: En desarrollo
+Estado: Implementado
 Prioridad: Alta
 Responsable: Agente (sesión Claude Code) con supervisión de elperik
 Dependencias: `000_ANDAMIAJE_INICIAL`, `002_PLAN_DESARROLLO_POR_FASES`, `003_ARQUITECTURA_Y_LIMITES`, `006_LIBRERIAS_Y_HERRAMIENTAS`
 Última revisión: 2026-06-27
+
+Commit/PR: PR #1 (merge `69b75ea`); contenido en `e8933d1` y `18ea986`
+Verificación: extensión `format`/`lint`/`typecheck`/`build` + 18 tests Vitest; host Java 11 tests JUnit + `package` (uber-jar). Verde en local (Node 24; JDK 21 + Maven 3.9.16) y en CI (jobs `extension` y `native-host`).
+Riesgo residual: validación de `format` en Java es anotación, no aserción (estructural sí aplica); sin pruebas E2E de navegador todavía (diferidas a Fase 1); el host aún no interpreta comandos de negocio más allá de `hello`.
 
 ## 1. Problema
 
@@ -134,10 +138,26 @@ Pendiente de completar la tabla de aprobación de `006 §5` para cada una en el 
 
 ## 15. Resultado implementado
 
-Completar al mover a `implementado`.
+Fase 0 cerrada. Entregado:
 
-Commit/PR: Pendiente
-Verificación: Pendiente
-Riesgo residual: Pendiente
+- contratos JSON Schema en `shared/contracts/` (native-message, native-response, hello) más la rutina existente, como fuente de verdad única;
+- generación automática de tipos TS y validadores standalone (`extension/scripts/generate-contracts.mjs`);
+- build de la extensión migrado a esbuild; `tsc` solo para typecheck;
+- validación runtime en la extensión (Ajv standalone, CSP-safe) y negociación `hello` en el service worker que valida entrada y salida;
+- descriptor de objetivo del grabador alineado a `target.selectors[]`;
+- host Java con `messaging/` (MessageCodec, SchemaValidator con NetworkNT, MessageHandler) y errores estructurados;
+- sitio de fixtures determinista en `fixtures/`;
+- CI con format:check, lint, typecheck, test y build en la extensión, y test+package en el host;
+- ESLint, Prettier, Vitest, JUnit 5 y AssertJ adoptados.
+
+Componentes principales nuevos: `shared/contracts/*.schema.json`, `extension/src/contracts/index.ts`, `extension/scripts/{generate-contracts,build}.mjs`, `native-host/.../messaging/*.java`, `fixtures/`.
+
+Commit/PR: PR #1 (merge `69b75ea`).
+Verificación: 18 tests TS + 11 tests Java verdes en local y CI; build y package correctos.
+Riesgo residual: format no asertado en Java; sin E2E de navegador; host sin comandos de negocio aún.
+
+## 16. Trabajo posterior recomendado
+
+Fase 1 (grabador robusto): persistencia de grabación por pestaña entre navegaciones, reinyección tras recargas/SPA, deduplicación de eventos, puntuación de selectores múltiples, redacción de campos sensibles y pruebas sobre los fixtures.
 </content>
 </invoke>
