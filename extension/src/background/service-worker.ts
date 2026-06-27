@@ -1,3 +1,12 @@
+import {
+  PROTOCOL_VERSION,
+  validateHelloResult,
+  validateNativeMessage,
+  validateNativeResponse,
+  withinSizeLimit,
+  type NativeMessage
+} from "../contracts/index.js";
+
 type RuteaMessage =
   | { type: "START_RECORDING" }
   | { type: "STOP_RECORDING" }
@@ -37,7 +46,7 @@ async function handleMessage(message: RuteaMessage): Promise<RuteaResponse> {
       await chrome.storage.local.set({ [STORAGE_KEY]: [] });
       return { ok: true };
     case "PING_NATIVE_HOST":
-      return pingNativeHost();
+      return negotiateWithHost();
     default:
       return { ok: false, error: "Mensaje no soportado" };
   }
@@ -81,21 +90,70 @@ async function getActiveTab(): Promise<chrome.tabs.Tab> {
   return tab;
 }
 
-function pingNativeHost(): Promise<RuteaResponse> {
-  return new Promise((resolve) => {
-    chrome.runtime.sendNativeMessage(
-      NATIVE_HOST_NAME,
-      { type: "ping", protocolVersion: 1 },
-      (response: unknown) => {
-        const runtimeError = chrome.runtime.lastError;
-        if (runtimeError) {
-          resolve({ ok: false, error: runtimeError.message });
-          return;
-        }
-        resolve({ ok: true, data: response });
-      }
-    );
+// Realiza la negociación de protocolo `hello` con el host, validando el sobre
+// saliente y la respuesta entrante antes de confiar en ningún dato del host.
+async function negotiateWithHost(): Promise<RuteaResponse> {
+  const envelope = buildEnvelope("hello", {
+    requestedProtocolVersions: [PROTOCOL_VERSION],
+    capabilities: []
   });
+
+  if (!withinSizeLimit(envelope)) {
+    return { ok: false, error: "El mensaje supera el tamaño permitido" };
+  }
+
+  const outgoing = validateNativeMessage(envelope);
+  if (!outgoing.ok) {
+    return { ok: false, error: `Mensaje saliente inválido: ${describeIssues(outgoing.issues)}` };
+  }
+
+  const raw = await sendNativeMessage(envelope);
+
+  const response = validateNativeResponse(raw);
+  if (!response.ok) {
+    return { ok: false, error: `Respuesta del host no válida: ${describeIssues(response.issues)}` };
+  }
+  if (!response.value.ok) {
+    return { ok: false, error: response.value.error?.message ?? "El host devolvió un error" };
+  }
+
+  const hello = validateHelloResult(response.value.payload);
+  if (!hello.ok) {
+    return { ok: false, error: "El host no completó la negociación de protocolo" };
+  }
+  if (!hello.value.supportedProtocolVersions.includes(PROTOCOL_VERSION)) {
+    return { ok: false, error: "El host no soporta la versión de protocolo de la extensión" };
+  }
+
+  return { ok: true, data: hello.value };
+}
+
+function buildEnvelope(type: string, payload: Record<string, unknown>): NativeMessage {
+  return {
+    protocolVersion: PROTOCOL_VERSION,
+    messageId: crypto.randomUUID(),
+    type,
+    timestamp: new Date().toISOString(),
+    payload,
+    meta: { extensionVersion: chrome.runtime.getManifest().version }
+  };
+}
+
+function sendNativeMessage(message: NativeMessage): Promise<unknown> {
+  return new Promise((resolve, reject) => {
+    chrome.runtime.sendNativeMessage(NATIVE_HOST_NAME, message, (response: unknown) => {
+      const runtimeError = chrome.runtime.lastError;
+      if (runtimeError) {
+        reject(new Error(runtimeError.message ?? "Error de Native Messaging"));
+        return;
+      }
+      resolve(response);
+    });
+  });
+}
+
+function describeIssues(issues: { path: string; message: string }[]): string {
+  return issues.map((issue) => `${issue.path} ${issue.message}`.trim()).join("; ");
 }
 
 function toErrorMessage(error: unknown): string {

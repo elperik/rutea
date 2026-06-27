@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Fixture iframe</title>
+  </head>
+  <body>
+    <main>
+      <h1>Contenido en iframe (mismo origen)</h1>
+      <button id="iframe-button" type="button">Acción dentro del iframe</button>
+      <p id="iframe-status" role="status">Sin interacción</p>
+    </main>
+    <script>
+      document.getElementById("iframe-button").addEventListener("click", () => {
+        document.getElementById("iframe-status").textContent = "Pulsado dentro del iframe";
+      });
+    </script>
+  </body>
+</html>

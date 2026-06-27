@@ -4,13 +4,7 @@
   "description": "Graba y ejecuta rutinas web de forma asistida y controlada.",
   "version": "0.1.0",
   "minimum_chrome_version": "116",
-  "permissions": [
-    "activeTab",
-    "nativeMessaging",
-    "scripting",
-    "sidePanel",
-    "storage"
-  ],
+  "permissions": ["activeTab", "nativeMessaging", "scripting", "sidePanel", "storage"],
   "action": {
     "default_title": "Abrir Rutea"
   },

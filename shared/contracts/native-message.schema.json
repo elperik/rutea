@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rutea.local/schemas/native-message.schema.json",
+  "title": "Sobre de mensaje Native Messaging de Rutea",
+  "description": "Sobre común para los mensajes intercambiados entre la extensión y el host Java. stdout del host queda reservado al protocolo length-prefixed; este esquema describe el contenido JSON de cada sobre.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["protocolVersion", "messageId", "type", "timestamp"],
+  "properties": {
+    "protocolVersion": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1000
+    },
+    "messageId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "correlationId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "type": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80,
+      "pattern": "^[a-z][a-z0-9_.]*$"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "payload": {
+      "type": "object"
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "extensionVersion": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "hostVersion": {
+          "type": "string",
+          "maxLength": 40
+        }
+      }
+    }
+  }
+}

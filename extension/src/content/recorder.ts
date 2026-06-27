@@ -1,7 +1,9 @@
 (() => {
   interface RecordedTarget {
     tag: string;
-    selector: string;
+    // Señales ordenadas por calidad, alineadas con el descriptor `target.selectors`
+    // del contrato de rutina (shared/routine.schema.json y doc 004).
+    selectors: string[];
     role?: string;
     accessibleName?: string;
     label?: string;
@@ -64,7 +66,11 @@
     const target = event.target;
     if (
       !recording ||
-      !(target instanceof HTMLInputElement || target instanceof HTMLSelectElement || target instanceof HTMLTextAreaElement)
+      !(
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLSelectElement ||
+        target instanceof HTMLTextAreaElement
+      )
     ) {
       return;
     }
@@ -74,7 +80,10 @@
 
     if (target instanceof HTMLSelectElement) {
       action = "select";
-    } else if (target instanceof HTMLInputElement && (target.type === "checkbox" || target.type === "radio")) {
+    } else if (
+      target instanceof HTMLInputElement &&
+      (target.type === "checkbox" || target.type === "radio")
+    ) {
       action = "check";
       value = target.checked;
     } else if (target instanceof HTMLInputElement && target.type === "password") {
@@ -106,7 +115,7 @@
 
     return {
       tag: element.tagName.toLowerCase(),
-      selector: buildSelector(element),
+      selectors: buildSelectors(element),
       role: element.getAttribute("role") ?? undefined,
       accessibleName: ariaLabel ?? label ?? text,
       label,
@@ -116,42 +125,61 @@
   }
 
   function getLabel(element: Element): string | undefined {
-    if (element instanceof HTMLInputElement || element instanceof HTMLSelectElement || element instanceof HTMLTextAreaElement) {
+    if (
+      element instanceof HTMLInputElement ||
+      element instanceof HTMLSelectElement ||
+      element instanceof HTMLTextAreaElement
+    ) {
       const explicitLabel = element.labels?.[0]?.textContent?.trim();
       if (explicitLabel) {
         return explicitLabel.replace(/\s+/g, " ").slice(0, 120);
       }
     }
 
-    return element.closest("label")?.textContent?.trim().replace(/\s+/g, " ").slice(0, 120) || undefined;
+    return (
+      element.closest("label")?.textContent?.trim().replace(/\s+/g, " ").slice(0, 120) || undefined
+    );
   }
 
-  function buildSelector(element: Element): string {
+  // Devuelve varios selectores ordenados por estabilidad. El primero es el preferido;
+  // los siguientes sirven como alternativas para la futura recuperación del ejecutor.
+  function buildSelectors(element: Element): string[] {
+    const selectors: string[] = [];
+
     const id = element.getAttribute("id");
     if (id) {
-      return `#${CSS.escape(id)}`;
+      selectors.push(`#${CSS.escape(id)}`);
     }
 
     const testId = element.getAttribute("data-testid");
     if (testId) {
-      return `[data-testid="${escapeAttribute(testId)}"]`;
+      selectors.push(`[data-testid="${escapeAttribute(testId)}"]`);
     }
 
     const name = element.getAttribute("name");
     if (name) {
-      return `${element.tagName.toLowerCase()}[name="${escapeAttribute(name)}"]`;
+      selectors.push(`${element.tagName.toLowerCase()}[name="${escapeAttribute(name)}"]`);
     }
 
+    const structural = buildStructuralSelector(element);
+    if (structural && !selectors.includes(structural)) {
+      selectors.push(structural);
+    }
+
+    return selectors;
+  }
+
+  function buildStructuralSelector(element: Element): string {
     const segments: string[] = [];
     let current: Element | null = element;
 
-    while (current && current !== document.documentElement && segments.length < 5) {
-      const currentElement = current;
+    while (current !== null && current !== document.documentElement && segments.length < 5) {
+      const currentElement: Element = current;
       let segment = currentElement.tagName.toLowerCase();
-      const parent = currentElement.parentElement;
+      const parent: Element | null = currentElement.parentElement;
 
-      if (parent) {
-        const siblings = (Array.from(parent.children) as Element[]).filter(
+      if (parent !== null) {
+        const siblings = Array.from(parent.children).filter(
           (candidate) => candidate.tagName === currentElement.tagName
         );
         if (siblings.length > 1) {

@@ -1,89 +1,83 @@
 package es.etic.rutea;
 
-import java.io.EOFException;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import es.etic.rutea.messaging.MessageCodec;
+import es.etic.rutea.messaging.MessageHandler;
+import es.etic.rutea.messaging.SchemaValidator;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.Clock;
+import java.util.UUID;
 
 /**
- * Host mínimo de Chrome Native Messaging.
+ * Host de Chrome Native Messaging de Rutea.
  *
- * <p>stdout queda reservado exclusivamente para mensajes con prefijo de longitud.
- * Cualquier diagnóstico debe escribirse en stderr.</p>
+ * <p>Lee mensajes length-prefixed por stdin, los valida contra los contratos
+ * compartidos y responde con un sobre estructurado por stdout. stdout queda
+ * reservado al protocolo; el diagnóstico va a stderr.</p>
  */
 public final class NativeHostMain {
 
-    private static final int MAX_MESSAGE_BYTES = 1_048_576;
+    private final ObjectMapper mapper;
+    private final MessageHandler handler;
 
-    private NativeHostMain() {
+    NativeHostMain(ObjectMapper mapper, MessageHandler handler) {
+        this.mapper = mapper;
+        this.handler = handler;
     }
 
     public static void main(String[] args) {
+        ObjectMapper mapper = new ObjectMapper();
+        MessageHandler handler =
+                new MessageHandler(mapper, new SchemaValidator(), Clock.systemUTC());
+        NativeHostMain host = new NativeHostMain(mapper, handler);
         try {
-            run(System.in, System.out);
-        } catch (Exception exception) {
+            host.run(System.in, System.out);
+        } catch (IOException exception) {
             System.err.println("Rutea Native Host finalizado: " + exception.getMessage());
             System.exit(1);
         }
     }
 
-    static void run(InputStream input, OutputStream output) throws IOException {
+    void run(InputStream input, OutputStream output) throws IOException {
         while (true) {
-            int length = readLittleEndianLength(input);
-            if (length < 0) {
+            byte[] raw = MessageCodec.readMessage(input);
+            if (raw == null) {
                 return;
             }
-            if (length > MAX_MESSAGE_BYTES) {
-                throw new IOException("Mensaje demasiado grande: " + length + " bytes");
-            }
-
-            byte[] payload = input.readNBytes(length);
-            if (payload.length != length) {
-                throw new EOFException("Mensaje incompleto");
-            }
-
-            String request = new String(payload, StandardCharsets.UTF_8);
-            String response = buildResponse(request.length());
-            writeMessage(output, response);
+            JsonNode response = process(raw);
+            MessageCodec.writeMessage(output, mapper.writeValueAsBytes(response));
         }
     }
 
-    private static String buildResponse(int requestLength) {
-        return "{\"ok\":true,\"protocolVersion\":1,\"service\":\"rutea-native-host\",\"requestLength\":"
-                + requestLength
-                + "}";
-    }
-
-    private static int readLittleEndianLength(InputStream input) throws IOException {
-        int first = input.read();
-        if (first < 0) {
-            return -1;
+    private JsonNode process(byte[] raw) {
+        JsonNode request;
+        try {
+            request = mapper.readTree(new String(raw, StandardCharsets.UTF_8));
+        } catch (JsonProcessingException exception) {
+            return malformedJsonResponse();
         }
-
-        int second = requireByte(input.read());
-        int third = requireByte(input.read());
-        int fourth = requireByte(input.read());
-
-        return first | (second << 8) | (third << 16) | (fourth << 24);
-    }
-
-    private static int requireByte(int value) throws EOFException {
-        if (value < 0) {
-            throw new EOFException("Cabecera Native Messaging incompleta");
+        if (request == null || !request.isObject()) {
+            return malformedJsonResponse();
         }
-        return value;
+        return handler.handle(request);
     }
 
-    private static void writeMessage(OutputStream output, String json) throws IOException {
-        byte[] bytes = json.getBytes(StandardCharsets.UTF_8);
-        int length = bytes.length;
-
-        output.write(length & 0xFF);
-        output.write((length >> 8) & 0xFF);
-        output.write((length >> 16) & 0xFF);
-        output.write((length >> 24) & 0xFF);
-        output.write(bytes);
-        output.flush();
+    private JsonNode malformedJsonResponse() {
+        ObjectNode response = mapper.createObjectNode();
+        response.put("protocolVersion", MessageHandler.PROTOCOL_VERSION);
+        response.put("correlationId", UUID.randomUUID().toString());
+        response.put("timestamp", java.time.Instant.now().toString());
+        response.put("ok", false);
+        ObjectNode error = response.putObject("error");
+        error.put("code", "VALIDATION_ERROR");
+        error.put("message", "El cuerpo del mensaje no es JSON válido");
+        return response;
     }
 }

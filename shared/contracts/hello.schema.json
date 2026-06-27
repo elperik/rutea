@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rutea.local/schemas/hello.schema.json",
+  "title": "Negociación de protocolo de Rutea",
+  "description": "Cargas útiles del intercambio de negociación de capacidades entre extensión y host. La extensión declara las versiones de protocolo que entiende; el host responde la versión acordada y sus capacidades.",
+  "type": "object",
+  "$defs": {
+    "helloRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requestedProtocolVersions"],
+      "properties": {
+        "requestedProtocolVersions": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000
+          }
+        },
+        "capabilities": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          }
+        }
+      }
+    },
+    "helloResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["protocolVersion", "supportedProtocolVersions", "service"],
+      "properties": {
+        "protocolVersion": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000
+        },
+        "supportedProtocolVersions": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000
+          }
+        },
+        "capabilities": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          }
+        },
+        "service": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        }
+      }
+    }
+  }
+}

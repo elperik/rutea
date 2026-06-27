@@ -1,7 +1,13 @@
 # Node / extensión
+node_modules/
 extension/node_modules/
 extension/dist/
 *.tsbuildinfo
+
+# Contratos generados desde shared/ (artefactos de build)
+extension/src/contracts/validators.generated.js
+extension/src/contracts/validators.generated.d.ts
+extension/src/contracts/types.ts
 
 # Java / Maven
 native-host/target/

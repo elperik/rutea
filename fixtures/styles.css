@@ -1,0 +1,71 @@
+:root {
+  color-scheme: light dark;
+  font-family: system-ui, sans-serif;
+  line-height: 1.5;
+}
+
+body {
+  margin: 0;
+  padding: 0 1.5rem 3rem;
+  max-width: 60rem;
+  margin-inline: auto;
+}
+
+header {
+  padding-block: 1.5rem;
+  border-bottom: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+}
+
+nav {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+section {
+  padding-block: 1.5rem;
+  border-bottom: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+}
+
+h2 {
+  font-size: 1.1rem;
+}
+
+label {
+  display: inline-block;
+  margin-block: 0.25rem;
+}
+
+input,
+select {
+  display: block;
+  padding: 0.4rem;
+  min-width: 16rem;
+}
+
+fieldset label,
+[role="group"] label {
+  display: block;
+}
+
+button {
+  padding: 0.45rem 0.9rem;
+  cursor: pointer;
+}
+
+button.danger {
+  border-color: #b00020;
+  color: #b00020;
+}
+
+#mensaje-resultado[data-kind="success"] {
+  color: #0a7d28;
+}
+
+#mensaje-resultado[data-kind="error"] {
+  color: #b00020;
+}
+
+.vista[data-active="false"] {
+  display: none;
+}
