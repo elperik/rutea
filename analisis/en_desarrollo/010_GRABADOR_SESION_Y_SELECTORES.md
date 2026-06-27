@@ -20,11 +20,13 @@ Primer incremento de la Fase 1: una sesión de grabación persistente y resilien
 
 - modelo de sesión de grabación por pestaña en `chrome.storage.session`;
 - recuperación del estado al reinyectar el grabador o reiniciar el panel/service worker;
+- permiso de host **por sitio** solicitado en runtime al iniciar grabación (`optional_host_permissions` + `chrome.permissions.request` acotado al origen activo);
 - deduplicación de pasos consecutivos equivalentes;
 - normalización de acciones;
 - ranking de selectores con razón (`rationale`) por candidato;
 - redacción de valores sensibles (password y campos marcados);
 - resaltado breve del elemento capturado;
+- registro de desarrollo del host (`register-chrome-host-dev.ps1`) para probar Native Messaging sin jpackage;
 - pruebas unitarias de la lógica pura (ranking, dedup, normalización).
 
 ### Excluido
@@ -44,7 +46,7 @@ Primer incremento de la Fase 1: una sesión de grabación persistente y resilien
 
 ## 5. Requisitos no funcionales
 
-- RNF-001 (seguridad): no se añaden permisos ni `host_permissions`; se sigue usando `activeTab` + `scripting`.
+- RNF-001 (seguridad): permiso de host mínimo y **por sitio**. No se conceden `host_permissions` de instalación; se usan `optional_host_permissions` solicitados en runtime solo para el origen de la pestaña activa al iniciar grabación. Se añade el permiso `tabs` para conocer ese origen y acotar la petición.
 - RNF-002 (mantenibilidad): la lógica pura (ranking, dedup, normalización) vive en módulos sin dependencias de DOM, testeables en Node.
 - RNF-003 (rendimiento): el grabador no debe degradar perceptiblemente la página; el resaltado es breve y no bloqueante.
 
@@ -78,6 +80,8 @@ Total Vitest tras el slice: 31 pruebas verdes (local).
 ## 14. Decisiones y cambios durante el desarrollo
 
 - 2026-06-27: se separa la lógica pura del DOM para poder testearla en Node con Vitest sin entorno de navegador.
+- 2026-06-27: abrir el panel lateral no concede `activeTab` sobre la página, así que `scripting.executeScript` fallaba ("must request permission to access the respective host"). Decisión: pedir permiso de host **por sitio** en runtime con `optional_host_permissions` + `chrome.permissions.request` durante el gesto de "Iniciar". Para conocer el origen activo y acotar la petición se añade el permiso `tabs`. El origen se cachea para no perder el gesto en un `await` previo a la petición. Verificado en vivo en Chrome.
+- 2026-06-27: registro del host en desarrollo mediante `java -jar` y un lanzador generado en `target/` (no se versiona ninguna ruta local). Negociación `hello` verificada end-to-end contra el JAR (respuesta `ok`, contrato `native-response`).
 
 ## 15. Resultado implementado
 
