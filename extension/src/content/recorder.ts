@@ -20,7 +20,7 @@ interface RecordedStep {
 type RuteaWindow = Window & { __ruteaRecorderInstalled?: boolean };
 
 const ruteaWindow = window as RuteaWindow;
-const STORAGE_KEY = "rutea.recordedSteps";
+const RECORDER_STORAGE_KEY = "rutea.recordedSteps";
 let recording = false;
 
 if (!ruteaWindow.__ruteaRecorderInstalled) {
@@ -89,11 +89,11 @@ function onChange(event: Event): void {
 }
 
 async function appendStep(step: RecordedStep): Promise<void> {
-  const stored = await chrome.storage.local.get(STORAGE_KEY);
-  const current = stored[STORAGE_KEY];
+  const stored = await chrome.storage.local.get(RECORDER_STORAGE_KEY);
+  const current = stored[RECORDER_STORAGE_KEY];
   const steps: RecordedStep[] = Array.isArray(current) ? current : [];
   steps.push(step);
-  await chrome.storage.local.set({ [STORAGE_KEY]: steps });
+  await chrome.storage.local.set({ [RECORDER_STORAGE_KEY]: steps });
 }
 
 function describeTarget(element: Element): RecordedTarget {
@@ -143,13 +143,16 @@ function buildSelector(element: Element): string {
   let current: Element | null = element;
 
   while (current && current !== document.documentElement && segments.length < 5) {
-    let segment = current.tagName.toLowerCase();
-    const parent = current.parentElement;
+    const currentElement = current;
+    let segment = currentElement.tagName.toLowerCase();
+    const parent = currentElement.parentElement;
 
     if (parent) {
-      const siblings = Array.from(parent.children).filter((candidate) => candidate.tagName === current?.tagName);
+      const siblings = (Array.from(parent.children) as Element[]).filter(
+        (candidate) => candidate.tagName === currentElement.tagName
+      );
       if (siblings.length > 1) {
-        segment += `:nth-of-type(${siblings.indexOf(current) + 1})`;
+        segment += `:nth-of-type(${siblings.indexOf(currentElement) + 1})`;
       }
     }
 

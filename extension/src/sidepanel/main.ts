@@ -74,3 +74,5 @@ function getElement(id: string): HTMLElement {
   }
   return element;
 }
+
+export {};
