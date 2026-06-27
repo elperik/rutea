@@ -1,0 +1,151 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rutea.local/schemas/routine.schema.json",
+  "title": "Rutina Rutea",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "id", "name", "allowedDomains", "steps"],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "allowedDomains": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "variables": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/variable"
+      }
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/step"
+      }
+    }
+  },
+  "$defs": {
+    "variable": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "type", "secret"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_]*$"
+        },
+        "type": {
+          "enum": ["string", "number", "boolean", "date", "file"]
+        },
+        "secret": {
+          "type": "boolean"
+        },
+        "defaultValue": {}
+      }
+    },
+    "step": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "action", "risk", "confirmationRequired"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "action": {
+          "enum": [
+            "navigate",
+            "click",
+            "fill",
+            "select",
+            "check",
+            "upload",
+            "download",
+            "wait",
+            "assert",
+            "ask_user"
+          ]
+        },
+        "target": {
+          "$ref": "#/$defs/target"
+        },
+        "value": {},
+        "risk": {
+          "enum": ["low", "medium", "high", "irreversible"]
+        },
+        "confirmationRequired": {
+          "type": "boolean"
+        },
+        "timeoutMs": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 120000
+        },
+        "postcondition": {
+          "$ref": "#/$defs/postcondition"
+        }
+      }
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "role": {
+          "type": "string"
+        },
+        "accessibleName": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "testId": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "selectors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "postcondition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "enum": ["urlMatches", "elementVisible", "elementHidden", "textVisible", "valueEquals"]
+        },
+        "value": {},
+        "target": {
+          "$ref": "#/$defs/target"
+        }
+      }
+    }
+  }
+}

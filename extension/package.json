@@ -1,0 +1,16 @@
+{
+  "name": "rutea-extension",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Extensión Chrome de Rutea para grabar y ejecutar rutinas web.",
+  "scripts": {
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
+    "build": "npm run clean && tsc -p tsconfig.json && node scripts/copy-static.mjs",
+    "watch": "tsc -p tsconfig.json --watch",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.287",
+    "typescript": "^5.7.3"
+  }
+}

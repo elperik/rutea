@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "Rutea",
+  "description": "Graba y ejecuta rutinas web de forma asistida y controlada.",
+  "version": "0.1.0",
+  "minimum_chrome_version": "116",
+  "permissions": [
+    "activeTab",
+    "nativeMessaging",
+    "scripting",
+    "sidePanel",
+    "storage"
+  ],
+  "action": {
+    "default_title": "Abrir Rutea"
+  },
+  "background": {
+    "service_worker": "background/service-worker.js",
+    "type": "module"
+  },
+  "side_panel": {
+    "default_path": "sidepanel/index.html"
+  }
+}
