@@ -29,6 +29,7 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
 });
 
 void refreshSteps();
+void refreshStatus();
 
 async function runCommand(type: string, successMessage: string): Promise<void> {
   setStatus("Procesando…");
@@ -41,8 +42,26 @@ async function runCommand(type: string, successMessage: string): Promise<void> {
 
     setStatus(successMessage);
     await refreshSteps();
+    await refreshStatus();
   } catch (error: unknown) {
     setStatus(error instanceof Error ? error.message : String(error), true);
+  }
+}
+
+// Refleja si la pestaña activa está grabando, según el estado persistido.
+async function refreshStatus(): Promise<void> {
+  try {
+    const response = (await chrome.runtime.sendMessage({
+      type: "GET_STATUS"
+    })) as CommandResponse & { data?: { recording?: boolean } };
+    const recording = response?.ok === true && response.data?.recording === true;
+    startButton.disabled = recording;
+    stopButton.disabled = !recording;
+    if (recording) {
+      setStatus("Grabando");
+    }
+  } catch {
+    // Sin estado disponible: se deja la UI como esté.
   }
 }
 

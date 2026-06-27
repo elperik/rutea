@@ -11,7 +11,9 @@ type RuteaMessage =
   | { type: "START_RECORDING" }
   | { type: "STOP_RECORDING" }
   | { type: "CLEAR_RECORDING" }
-  | { type: "PING_NATIVE_HOST" };
+  | { type: "GET_STATUS" }
+  | { type: "PING_NATIVE_HOST" }
+  | { type: "RUTEA_IS_RECORDING" };
 
 interface RuteaResponse {
   ok: boolean;
@@ -21,22 +23,28 @@ interface RuteaResponse {
 
 const NATIVE_HOST_NAME = "es.etic.rutea";
 const STORAGE_KEY = "rutea.recordedSteps";
+const SESSION_KEY = "rutea.recordingSessions";
 
 chrome.runtime.onInstalled.addListener(() => {
   void chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
 });
 
-chrome.runtime.onMessage.addListener((message: RuteaMessage, _sender, sendResponse) => {
-  void handleMessage(message)
-    .then(sendResponse)
-    .catch((error: unknown) => {
-      sendResponse({ ok: false, error: toErrorMessage(error) } satisfies RuteaResponse);
-    });
+chrome.runtime.onMessage.addListener(
+  (message: RuteaMessage, sender: chrome.runtime.MessageSender, sendResponse) => {
+    void handleMessage(message, sender)
+      .then(sendResponse)
+      .catch((error: unknown) => {
+        sendResponse({ ok: false, error: toErrorMessage(error) } satisfies RuteaResponse);
+      });
 
-  return true;
-});
+    return true;
+  }
+);
 
-async function handleMessage(message: RuteaMessage): Promise<RuteaResponse> {
+async function handleMessage(
+  message: RuteaMessage,
+  sender: chrome.runtime.MessageSender
+): Promise<RuteaResponse> {
   switch (message.type) {
     case "START_RECORDING":
       return startRecording();
@@ -45,6 +53,10 @@ async function handleMessage(message: RuteaMessage): Promise<RuteaResponse> {
     case "CLEAR_RECORDING":
       await chrome.storage.local.set({ [STORAGE_KEY]: [] });
       return { ok: true };
+    case "GET_STATUS":
+      return getStatus();
+    case "RUTEA_IS_RECORDING":
+      return { ok: true, data: { recording: await isTabRecording(sender.tab?.id) } };
     case "PING_NATIVE_HOST":
       return negotiateWithHost();
     default:
@@ -52,11 +64,48 @@ async function handleMessage(message: RuteaMessage): Promise<RuteaResponse> {
   }
 }
 
+// Sesiones de grabación persistidas por pestaña. Sobreviven al reinicio del
+// service worker (storage.session) sin exponerse a los content scripts.
+async function readSessions(): Promise<Record<string, { startedAt: string }>> {
+  const stored = await chrome.storage.session.get(SESSION_KEY);
+  const value = stored[SESSION_KEY];
+  return isRecord(value) ? (value as Record<string, { startedAt: string }>) : {};
+}
+
+async function setTabRecording(tabId: number, active: boolean): Promise<void> {
+  const sessions = await readSessions();
+  if (active) {
+    sessions[String(tabId)] = { startedAt: new Date().toISOString() };
+  } else {
+    delete sessions[String(tabId)];
+  }
+  await chrome.storage.session.set({ [SESSION_KEY]: sessions });
+}
+
+async function isTabRecording(tabId: number | undefined): Promise<boolean> {
+  if (tabId === undefined) {
+    return false;
+  }
+  const sessions = await readSessions();
+  return Object.prototype.hasOwnProperty.call(sessions, String(tabId));
+}
+
+async function getStatus(): Promise<RuteaResponse> {
+  const tab = await getActiveTab();
+  return { ok: true, data: { recording: await isTabRecording(tab.id) } };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 async function startRecording(): Promise<RuteaResponse> {
   const tab = await getActiveTab();
   if (tab.id === undefined) {
     return { ok: false, error: "La pestaña activa no tiene identificador" };
   }
+
+  await setTabRecording(tab.id, true);
 
   await chrome.scripting.executeScript({
     target: { tabId: tab.id },
@@ -73,11 +122,14 @@ async function stopRecording(): Promise<RuteaResponse> {
     return { ok: false, error: "La pestaña activa no tiene identificador" };
   }
 
+  await setTabRecording(tab.id, false);
+
   try {
     await chrome.tabs.sendMessage(tab.id, { type: "RUTEA_STOP_RECORDING" });
     return { ok: true };
   } catch {
-    return { ok: false, error: "No hay un grabador activo en esta pestaña" };
+    // El content script pudo desaparecer (recarga); la sesión ya quedó cerrada.
+    return { ok: true };
   }
 }
 
