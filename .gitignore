@@ -1,0 +1,33 @@
+# Node / extensión
+extension/node_modules/
+extension/dist/
+*.tsbuildinfo
+
+# Java / Maven
+native-host/target/
+*.class
+*.jar
+*.war
+*.iml
+.idea/
+
+# Datos locales y secretos
+.env
+.env.*
+!.env.example
+*.sqlite
+*.sqlite3
+*.db
+logs/
+data/
+artifacts/
+screenshots/
+traces/
+
+# VS Code local
+.vscode/*.local.json
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini

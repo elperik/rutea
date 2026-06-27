@@ -1,0 +1,13 @@
+{
+  "recommendations": [
+    "vscjava.vscode-java-pack",
+    "vscjava.vscode-maven",
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "editorconfig.editorconfig",
+    "ms-playwright.playwright",
+    "github.copilot",
+    "openai.chatgpt",
+    "anthropic.claude-code"
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "folders": [
+    {
+      "name": "Rutea",
+      "path": "."
+    }
+  ],
+  "settings": {
+    "files.eol": "\n",
+    "editor.formatOnSave": true,
+    "java.configuration.updateBuildConfiguration": "automatic",
+    "search.exclude": {
+      "**/node_modules": true,
+      "**/dist": true,
+      "**/target": true
+    }
+  }
+}

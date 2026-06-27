@@ -1,0 +1,52 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Extension: install",
+      "type": "shell",
+      "command": "npm install",
+      "options": {
+        "cwd": "${workspaceFolder}/extension"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Extension: build",
+      "type": "shell",
+      "command": "npm run build",
+      "dependsOn": "Extension: install",
+      "dependsOrder": "sequence",
+      "options": {
+        "cwd": "${workspaceFolder}/extension"
+      },
+      "problemMatcher": "$tsc"
+    },
+    {
+      "label": "Native host: package",
+      "type": "shell",
+      "command": "mvn -B clean package",
+      "options": {
+        "cwd": "${workspaceFolder}/native-host"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Native host: app image",
+      "type": "shell",
+      "command": "powershell -ExecutionPolicy Bypass -File scripts/package-app.ps1",
+      "options": {
+        "cwd": "${workspaceFolder}/native-host"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Rutea: build all",
+      "dependsOn": [
+        "Extension: build",
+        "Native host: package"
+      ],
+      "dependsOrder": "parallel",
+      "problemMatcher": []
+    }
+  ]
+}
