@@ -101,11 +101,53 @@ button.danger {
 }
 
 #status,
-#step-count {
+#step-count,
+#routine-count {
   padding: 4px 8px;
   border-radius: 999px;
   background: color-mix(in srgb, CanvasText 12%, transparent);
   font-size: 0.78rem;
+}
+
+.import-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #4b5563;
+  color: white;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+#routines {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+#routines li {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 8px;
+  align-items: center;
+}
+
+#routines li span {
+  font-size: 0.85rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#routines li button {
+  min-height: 32px;
+  padding: 4px 10px;
+  font-size: 0.8rem;
 }
 
 pre {
