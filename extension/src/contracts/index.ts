@@ -92,9 +92,7 @@ export function validateScreenContext(data: unknown): ValidationResult<ScreenCon
   return validateWith<ScreenContext>(validators.screenContext, data);
 }
 
-export function validateAiNavigationRequest(
-  data: unknown
-): ValidationResult<AiNavigationRequest> {
+export function validateAiNavigationRequest(data: unknown): ValidationResult<AiNavigationRequest> {
   return validateWith<AiNavigationRequest>(validators.aiNavigationRequest, data);
 }
 
