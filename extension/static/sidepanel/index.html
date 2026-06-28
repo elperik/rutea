@@ -37,6 +37,21 @@
         </div>
         <pre id="steps" aria-live="polite">[]</pre>
       </section>
+
+      <section aria-labelledby="library-title">
+        <div class="section-heading">
+          <h2 id="library-title">Biblioteca de rutinas</h2>
+          <span id="routine-count">0</span>
+        </div>
+        <div class="actions">
+          <button id="save-routine" type="button">Guardar grabación como rutina</button>
+          <label class="import-label">
+            Importar
+            <input id="import-routine" type="file" accept="application/json" hidden />
+          </label>
+        </div>
+        <ul id="routines" aria-live="polite"></ul>
+      </section>
     </main>
 
     <script type="module" src="main.js"></script>
