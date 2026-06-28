@@ -71,6 +71,7 @@ Contiene la memoria técnica de funcionalidades concluidas. El documento se muev
 - [`implementado/013_EDITOR_DE_PASOS.md`](implementado/013_EDITOR_DE_PASOS.md): editor de pasos (reordenar, eliminar, riesgo/confirmación/timeout, renombrar).
 - [`implementado/014_VERSIONADO_E_INTEGRIDAD.md`](implementado/014_VERSIONADO_E_INTEGRIDAD.md): sobre de exportación con hash SHA-256 y verificación de integridad al importar.
 - [`implementado/015_VARIABLES.md`](implementado/015_VARIABLES.md): variables de rutina (extracción, gestión, resolución) y su edición. Cierra la Fase 2.
+- [`implementado/016_EJECUTOR_MAQUINA_DE_ESTADOS.md`](implementado/016_EJECUTOR_MAQUINA_DE_ESTADOS.md): máquina de estados pura del ejecutor (Fase 3).
 
 ## Orden de lectura para agentes
 

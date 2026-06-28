@@ -6,10 +6,25 @@ import {
   extractVariable,
   isReference,
   removeVariable,
+  resolveInputs,
+  resolveStepValue,
   setVariableSecret,
   updateVariableDefault
 } from "../routines/variables.js";
+import {
+  createExecution,
+  currentStep,
+  isTerminal,
+  reduce,
+  type ExecutionState
+} from "../executor/execution.js";
 import { validateRoutine, type Routine, type Step, type Variable } from "../contracts/index.js";
+
+interface StepOutcomeResponse {
+  ok?: boolean;
+  selectorUsed?: string;
+  error?: string;
+}
 
 interface CommandResponse {
   ok: boolean;
@@ -45,6 +60,7 @@ let draft: Routine | null = null;
 // Origen http/https de la pestaña activa, cacheado para poder solicitar el
 // permiso por sitio durante el gesto de clic sin perderlo en un await previo.
 let activeOrigin: string | null = null;
+let activeHostname: string | null = null;
 
 startButton.addEventListener("click", () => void startRecording());
 stopButton.addEventListener("click", () => runCommand("STOP_RECORDING", "Grabación detenida"));
@@ -104,9 +120,17 @@ async function refreshActiveOrigin(): Promise<void> {
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     const url = tab?.url;
-    activeOrigin = url && /^https?:/.test(url) ? `${new URL(url).origin}/*` : null;
+    if (url && /^https?:/.test(url)) {
+      const parsed = new URL(url);
+      activeOrigin = `${parsed.origin}/*`;
+      activeHostname = parsed.hostname;
+    } else {
+      activeOrigin = null;
+      activeHostname = null;
+    }
   } catch {
     activeOrigin = null;
+    activeHostname = null;
   }
 }
 
@@ -202,8 +226,14 @@ function renderRoutineItem(routine: Routine): HTMLLIElement {
   const title = document.createElement("span");
   title.textContent = `${routine.name} · ${routine.steps.length} pasos`;
 
+  const runButton = document.createElement("button");
+  runButton.type = "button";
+  runButton.textContent = "Ejecutar";
+  runButton.addEventListener("click", () => void executeRoutine(routine));
+
   const editButton = document.createElement("button");
   editButton.type = "button";
+  editButton.className = "secondary";
   editButton.textContent = "Editar";
   editButton.addEventListener("click", () => openEditor(routine));
 
@@ -219,8 +249,103 @@ function renderRoutineItem(routine: Routine): HTMLLIElement {
   deleteButton.textContent = "Eliminar";
   deleteButton.addEventListener("click", () => void removeRoutine(routine.id));
 
-  item.append(title, editButton, exportButton, deleteButton);
+  item.append(title, runButton, editButton, exportButton, deleteButton);
   return item;
+}
+
+// --- Ejecución supervisada ----------------------------------------------------
+
+async function executeRoutine(routine: Routine): Promise<void> {
+  if (!activeOrigin || !activeHostname) {
+    setStatus("Abre primero una página http/https para ejecutar", true);
+    return;
+  }
+
+  // El permiso debe pedirse en el gesto, sin await previo que lo invalide.
+  let granted: boolean;
+  try {
+    granted = await chrome.permissions.request({ origins: [activeOrigin] });
+  } catch {
+    setStatus("No se pudo solicitar permiso para esta página", true);
+    return;
+  }
+  if (!granted) {
+    setStatus("Permiso denegado para esta página", true);
+    return;
+  }
+
+  if (!routine.allowedDomains.includes(activeHostname)) {
+    setStatus(`El dominio activo (${activeHostname}) no está autorizado para esta rutina`, true);
+    return;
+  }
+
+  const inputs = resolveInputs(routine);
+  let state = reduce(routine, createExecution("supervised"), { type: "start" });
+  setExecStatus(routine, state);
+
+  while (!isTerminal(state.status)) {
+    if (state.status === "waiting_for_confirmation") {
+      const step = currentStep(routine, state);
+      const summary = step ? `${step.action} · ${targetSummary(step)}` : "";
+      const confirmed = window.confirm(`Confirmar paso ${state.index + 1}: ${summary}`);
+      state = reduce(routine, state, { type: confirmed ? "confirm" : "cancel" });
+      continue;
+    }
+
+    if (state.status === "running") {
+      const step = currentStep(routine, state);
+      if (!step) {
+        break;
+      }
+      const resolved = resolveStepValue(step.value, inputs);
+      if (!resolved.resolved) {
+        state = reduce(routine, state, {
+          type: "stepFailed",
+          error: `Variable sin valor: ${resolved.name}`
+        });
+        setExecStatus(routine, state);
+        continue;
+      }
+
+      const response = (await chrome.runtime.sendMessage({
+        type: "EXECUTE_STEP",
+        step,
+        value: resolved.value
+      })) as { ok?: boolean; data?: StepOutcomeResponse; error?: string };
+
+      const outcome: StepOutcomeResponse = response?.ok
+        ? (response.data ?? { ok: false, error: "Sin respuesta del player" })
+        : { ok: false, error: response?.error ?? "Fallo de ejecución" };
+
+      state = reduce(
+        routine,
+        state,
+        outcome.ok
+          ? { type: "stepCompleted", selectorUsed: outcome.selectorUsed }
+          : { type: "stepFailed", error: outcome.error ?? "Fallo de ejecución" }
+      );
+      setExecStatus(routine, state);
+    }
+  }
+
+  setExecStatus(routine, state, true);
+}
+
+function setExecStatus(routine: Routine, state: ExecutionState, final = false): void {
+  const total = routine.steps.length;
+  const done = state.results.length;
+  if (final) {
+    const failed = state.results.find((result) => result.status === "failed");
+    const label =
+      state.status === "completed"
+        ? `Ejecución completada (${done}/${total})`
+        : state.status === "cancelled"
+          ? `Ejecución cancelada (${done}/${total})`
+          : `Ejecución fallida en el paso ${done}: ${failed?.error ?? ""}`;
+    setStatus(label, state.status !== "completed");
+    return;
+  }
+  setStatus(`Ejecutando ${routine.name}: paso ${Math.min(state.index + 1, total)}/${total}`);
 }
 
 // --- Editor de rutina ---------------------------------------------------------

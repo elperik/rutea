@@ -24,7 +24,8 @@ const targets = [
     format: "esm"
   },
   { entry: "src/sidepanel/main.ts", out: "dist/sidepanel/main.js", format: "esm" },
-  { entry: "src/content/recorder.ts", out: "dist/content/recorder.js", format: "iife" }
+  { entry: "src/content/recorder.ts", out: "dist/content/recorder.js", format: "iife" },
+  { entry: "src/content/player.ts", out: "dist/content/player.js", format: "iife" }
 ];
 
 await Promise.all(
