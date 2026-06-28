@@ -1,10 +1,14 @@
 # 011_CONTINUIDAD_ENTRE_NAVEGACIONES
 
-Estado: En desarrollo
+Estado: Implementado
 Prioridad: Alta
 Responsable: Agente (sesión Claude Code) con supervisión de elperik
 Dependencias: `010_GRABADOR_SESION_Y_SELECTORES`
-Última revisión: 2026-06-27
+Última revisión: 2026-06-28
+
+Commit/PR: PR #3 (merge `ff8eefb`)
+Verificación: 36 tests Vitest + lint/typecheck/build verdes (local y CI).
+Riesgo residual: el content script registrado se inyecta (inerte) también en otras pestañas del mismo origen; navegar fuera del origen autorizado detiene la captura; sin E2E automatizado.
 
 ## 1. Problema
 
@@ -67,8 +71,8 @@ Mantener la grabación al navegar o recargar dentro del **origen ya autorizado**
 
 ## 15. Resultado implementado
 
-Completar al mover a `implementado`.
+Entregado: registro dinámico de un content script por origen autorizado (`origins.ts` + `service-worker`), reinyección automática del grabador tras navegaciones/recargas dentro del origen y desregistro al detener. 5 pruebas nuevas (36 totales).
 
-Commit/PR: Pendiente
-Verificación: Pendiente
-Riesgo residual: Pendiente
+Commit/PR: PR #3 (merge `ff8eefb`).
+Verificación: local + CI verdes.
+Riesgo residual: inyección inerte en otras pestañas del mismo origen; sin continuidad fuera del origen; sin E2E automatizado.

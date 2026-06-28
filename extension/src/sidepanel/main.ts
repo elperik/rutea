@@ -1,7 +1,8 @@
 import { buildRoutineFromRecording, type RecordedStepInput } from "../routines/build.js";
 import { parseRoutine, serializeRoutine } from "../routines/io.js";
 import { deleteRoutine, listRoutines, saveRoutine } from "../routines/library.js";
-import type { Routine } from "../contracts/index.js";
+import { moveStep, removeStep, renameRoutine, updateStep } from "../routines/edit.js";
+import { validateRoutine, type Routine, type Step } from "../contracts/index.js";
 
 interface CommandResponse {
   ok: boolean;
@@ -22,6 +23,16 @@ const saveRoutineButton = getButton("save-routine");
 const importInput = getInput("import-routine");
 const routinesElement = getElement("routines");
 const routineCountElement = getElement("routine-count");
+const editorSection = getElement("editor");
+const editorName = getInput("editor-name");
+const editorSteps = getElement("editor-steps");
+const editorSaveButton = getButton("editor-save");
+const editorCloseButton = getButton("editor-close");
+
+const RISKS: Step["risk"][] = ["low", "medium", "high", "irreversible"];
+
+// Borrador de la rutina en edición; null si el editor está cerrado.
+let draft: Routine | null = null;
 
 // Origen http/https de la pestaña activa, cacheado para poder solicitar el
 // permiso por sitio durante el gesto de clic sin perderlo en un await previo.
@@ -32,6 +43,13 @@ stopButton.addEventListener("click", () => runCommand("STOP_RECORDING", "Grabaci
 clearButton.addEventListener("click", () => runCommand("CLEAR_RECORDING", "Pasos eliminados"));
 saveRoutineButton.addEventListener("click", () => void saveCurrentRecording());
 importInput.addEventListener("change", (event) => void importFromFile(event));
+editorName.addEventListener("input", () => {
+  if (draft) {
+    draft = renameRoutine(draft, editorName.value);
+  }
+});
+editorSaveButton.addEventListener("click", () => void saveDraft());
+editorCloseButton.addEventListener("click", closeEditor);
 pingHostButton.addEventListener("click", () =>
   runCommand("PING_NATIVE_HOST", "Host Java conectado")
 );
@@ -176,8 +194,14 @@ function renderRoutineItem(routine: Routine): HTMLLIElement {
   const title = document.createElement("span");
   title.textContent = `${routine.name} · ${routine.steps.length} pasos`;
 
+  const editButton = document.createElement("button");
+  editButton.type = "button";
+  editButton.textContent = "Editar";
+  editButton.addEventListener("click", () => openEditor(routine));
+
   const exportButton = document.createElement("button");
   exportButton.type = "button";
+  exportButton.className = "secondary";
   exportButton.textContent = "Exportar";
   exportButton.addEventListener("click", () => exportRoutine(routine));
 
@@ -187,8 +211,153 @@ function renderRoutineItem(routine: Routine): HTMLLIElement {
   deleteButton.textContent = "Eliminar";
   deleteButton.addEventListener("click", () => void removeRoutine(routine.id));
 
-  item.append(title, exportButton, deleteButton);
+  item.append(title, editButton, exportButton, deleteButton);
   return item;
+}
+
+// --- Editor de rutina ---------------------------------------------------------
+
+function openEditor(routine: Routine): void {
+  draft = structuredClone(routine);
+  editorName.value = draft.name;
+  editorSection.hidden = false;
+  renderDraftSteps();
+  editorSection.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function closeEditor(): void {
+  draft = null;
+  editorSection.hidden = true;
+  editorSteps.replaceChildren();
+}
+
+function renderDraftSteps(): void {
+  if (!draft) {
+    return;
+  }
+  editorSteps.replaceChildren(...draft.steps.map((step, index) => renderDraftStep(step, index)));
+}
+
+function renderDraftStep(step: Step, index: number): HTMLLIElement {
+  const item = document.createElement("li");
+  item.className = "editor-step";
+
+  const heading = document.createElement("p");
+  heading.className = "editor-step-heading";
+  heading.textContent = `${index + 1}. ${step.action} · ${targetSummary(step)}`;
+
+  const controls = document.createElement("div");
+  controls.className = "editor-step-controls";
+
+  controls.append(
+    riskControl(step, index),
+    confirmationControl(step, index),
+    timeoutControl(step, index)
+  );
+
+  const order = document.createElement("div");
+  order.className = "editor-step-order";
+  order.append(
+    orderButton("↑", () => applyEdit(moveStep(draft!, index, -1))),
+    orderButton("↓", () => applyEdit(moveStep(draft!, index, 1))),
+    dangerButton("Eliminar", () => applyEdit(removeStep(draft!, index)))
+  );
+
+  item.append(heading, controls, order);
+  return item;
+}
+
+function riskControl(step: Step, index: number): HTMLLabelElement {
+  const label = document.createElement("label");
+  label.textContent = "Riesgo ";
+  const select = document.createElement("select");
+  for (const risk of RISKS) {
+    const option = document.createElement("option");
+    option.value = risk;
+    option.textContent = risk;
+    option.selected = step.risk === risk;
+    select.append(option);
+  }
+  select.addEventListener("change", () => {
+    applyEdit(updateStep(draft!, index, { risk: select.value as Step["risk"] }));
+  });
+  label.append(select);
+  return label;
+}
+
+function confirmationControl(step: Step, index: number): HTMLLabelElement {
+  const label = document.createElement("label");
+  const checkbox = document.createElement("input");
+  checkbox.type = "checkbox";
+  checkbox.checked = step.confirmationRequired;
+  checkbox.addEventListener("change", () => {
+    applyEdit(updateStep(draft!, index, { confirmationRequired: checkbox.checked }));
+  });
+  label.append(checkbox, document.createTextNode(" Confirmar"));
+  return label;
+}
+
+function timeoutControl(step: Step, index: number): HTMLLabelElement {
+  const label = document.createElement("label");
+  label.textContent = "Timeout ";
+  const input = document.createElement("input");
+  input.type = "number";
+  input.min = "0";
+  input.max = "120000";
+  input.placeholder = "ms";
+  input.value = step.timeoutMs === undefined ? "" : String(step.timeoutMs);
+  input.addEventListener("change", () => {
+    const value = input.value.trim();
+    const timeoutMs = value === "" ? undefined : Number(value);
+    applyEdit(updateStep(draft!, index, { timeoutMs }));
+  });
+  label.append(input);
+  return label;
+}
+
+function orderButton(text: string, onClick: () => void): HTMLButtonElement {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "secondary";
+  button.textContent = text;
+  button.addEventListener("click", onClick);
+  return button;
+}
+
+function dangerButton(text: string, onClick: () => void): HTMLButtonElement {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "danger";
+  button.textContent = text;
+  button.addEventListener("click", onClick);
+  return button;
+}
+
+function applyEdit(next: Routine): void {
+  draft = next;
+  renderDraftSteps();
+}
+
+function targetSummary(step: Step): string {
+  return step.target?.selectors?.[0] ?? step.target?.accessibleName ?? step.target?.label ?? "—";
+}
+
+async function saveDraft(): Promise<void> {
+  if (!draft) {
+    return;
+  }
+  const result = validateRoutine(draft);
+  if (!result.ok) {
+    setStatus(
+      `No se puede guardar: ${result.issues.map((i) => `${i.path} ${i.message}`.trim()).join("; ")}`,
+      true
+    );
+    return;
+  }
+  await saveRoutine(result.value);
+  setStatus("Cambios guardados");
+  closeEditor();
+  await refreshRoutines();
 }
 
 function exportRoutine(routine: Routine): void {

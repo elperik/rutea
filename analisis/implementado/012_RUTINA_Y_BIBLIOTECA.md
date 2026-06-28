@@ -1,10 +1,14 @@
 # 012_RUTINA_Y_BIBLIOTECA
 
-Estado: En desarrollo
+Estado: Implementado
 Prioridad: Alta
 Responsable: Agente (sesión Claude Code) con supervisión de elperik
 Dependencias: `009_CIERRE_FASE_0`, `010_GRABADOR_SESION_Y_SELECTORES`, `004_MODELO_DE_RUTINAS_Y_EJECUCION`
-Última revisión: 2026-06-27
+Última revisión: 2026-06-28
+
+Commit/PR: PR #4 (merge `a533368`)
+Verificación: 45 tests Vitest + lint/typecheck/build verdes (local y CI).
+Riesgo residual: biblioteca en `storage.local` (no en el host, Fase 4); sin editor de pasos ni versionado con hash todavía (iniciativa 013 y siguientes); sin E2E automatizado.
 
 ## 1. Problema
 
@@ -75,8 +79,8 @@ Primer incremento de la Fase 2: transformar la grabación actual en una `Routine
 
 ## 15. Resultado implementado
 
-Completar al mover a `implementado`.
+Entregado: conversión grabación → `Routine` validada (`routines/build.ts`), export/import con rechazo de inválidos (`routines/io.ts`), biblioteca en `storage.local` (`routines/library.ts`) y UI de biblioteca en el panel (guardar, listar, exportar, eliminar, importar). 9 pruebas nuevas (45 totales).
 
-Commit/PR: Pendiente
-Verificación: Pendiente
-Riesgo residual: Pendiente
+Commit/PR: PR #4 (merge `a533368`).
+Verificación: local + CI verdes.
+Riesgo residual: biblioteca local (no host); sin editor ni versionado con hash; sin E2E automatizado.
