@@ -1,10 +1,14 @@
 # 015_VARIABLES
 
-Estado: En desarrollo
+Estado: Implementado
 Prioridad: Alta
 Responsable: Agente (sesión Claude Code) con supervisión de elperik
 Dependencias: `012_RUTINA_Y_BIBLIOTECA`, `013_EDITOR_DE_PASOS`, `004_MODELO_DE_RUTINAS_Y_EJECUCION`
 Última revisión: 2026-06-28
+
+Commit/PR: PR #7 (merge `84b5c48`)
+Verificación: 71 tests Vitest + lint/typecheck/build verdes (local y CI, incluido host Java).
+Riesgo residual: solo referencia simple `{{nombre}}` (sin expresiones); secretos referenciados pero sin resolución real (Fase 4); sin conjuntos de entrada múltiples; sin E2E automatizado.
 
 ## 1. Problema
 
@@ -72,8 +76,8 @@ Permitir convertir el valor de un paso en una variable de la rutina, gestionar l
 
 ## 15. Resultado implementado
 
-Completar al mover a `implementado`.
+Entregado: `routines/variables.ts` (referencias, extractVariable, gestión, resolución) y UI de editor (convertir valor en variable y sección de variables con default/secreto/eliminar). 10 pruebas nuevas (71 totales). Cierra la Fase 2.
 
-Commit/PR: Pendiente
-Verificación: Pendiente
-Riesgo residual: Pendiente
+Commit/PR: PR #7 (merge `84b5c48`).
+Verificación: local + CI verdes.
+Riesgo residual: referencia simple; secretos sin resolución real; sin E2E automatizado.
