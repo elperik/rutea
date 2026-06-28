@@ -227,6 +227,51 @@ button.danger {
   font-size: 0.8rem;
 }
 
+.editor-subtitle {
+  margin: 4px 0 8px;
+  font-size: 0.9rem;
+}
+
+#editor-variables {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+}
+
+.editor-variable {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  gap: 8px;
+  align-items: center;
+  font-size: 0.8rem;
+}
+
+.editor-variable-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 650;
+}
+
+.editor-variable input[type="text"] {
+  min-height: 30px;
+  width: 9rem;
+  padding: 2px 6px;
+  border: 1px solid color-mix(in srgb, CanvasText 25%, transparent);
+  border-radius: 6px;
+  background: Canvas;
+  color: CanvasText;
+  font: inherit;
+}
+
+.editor-variable button {
+  min-height: 28px;
+  padding: 2px 8px;
+  font-size: 0.78rem;
+}
+
 pre {
   max-height: 45vh;
   margin: 0;

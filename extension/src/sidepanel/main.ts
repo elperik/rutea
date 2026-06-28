@@ -2,7 +2,14 @@ import { buildRoutineFromRecording, type RecordedStepInput } from "../routines/b
 import { parseRoutineDocument, serializeRoutineExport } from "../routines/io.js";
 import { deleteRoutine, listRoutines, saveRoutine } from "../routines/library.js";
 import { moveStep, removeStep, renameRoutine, updateStep } from "../routines/edit.js";
-import { validateRoutine, type Routine, type Step } from "../contracts/index.js";
+import {
+  extractVariable,
+  isReference,
+  removeVariable,
+  setVariableSecret,
+  updateVariableDefault
+} from "../routines/variables.js";
+import { validateRoutine, type Routine, type Step, type Variable } from "../contracts/index.js";
 
 interface CommandResponse {
   ok: boolean;
@@ -26,6 +33,7 @@ const routineCountElement = getElement("routine-count");
 const editorSection = getElement("editor");
 const editorName = getInput("editor-name");
 const editorSteps = getElement("editor-steps");
+const editorVariables = getElement("editor-variables");
 const editorSaveButton = getButton("editor-save");
 const editorCloseButton = getButton("editor-close");
 
@@ -221,7 +229,7 @@ function openEditor(routine: Routine): void {
   draft = structuredClone(routine);
   editorName.value = draft.name;
   editorSection.hidden = false;
-  renderDraftSteps();
+  renderDraft();
   editorSection.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
@@ -229,13 +237,17 @@ function closeEditor(): void {
   draft = null;
   editorSection.hidden = true;
   editorSteps.replaceChildren();
+  editorVariables.replaceChildren();
 }
 
-function renderDraftSteps(): void {
+function renderDraft(): void {
   if (!draft) {
     return;
   }
   editorSteps.replaceChildren(...draft.steps.map((step, index) => renderDraftStep(step, index)));
+  editorVariables.replaceChildren(
+    ...(draft.variables ?? []).map((variable) => renderDraftVariable(variable))
+  );
 }
 
 function renderDraftStep(step: Step, index: number): HTMLLIElement {
@@ -264,6 +276,68 @@ function renderDraftStep(step: Step, index: number): HTMLLIElement {
   );
 
   item.append(heading, controls, order);
+
+  if (step.value !== undefined && step.value !== null && !isReference(step.value)) {
+    const convert = orderButton("→ Variable", () => convertStepToVariable(index));
+    convert.classList.remove("secondary");
+    item.append(convert);
+  }
+
+  return item;
+}
+
+function convertStepToVariable(index: number): void {
+  if (!draft) {
+    return;
+  }
+  const name = window.prompt("Nombre de la variable");
+  if (name === null) {
+    return;
+  }
+  const result = extractVariable(draft, index, name.trim());
+  if (!result.ok) {
+    setStatus(result.issues.map((issue) => issue.message).join("; "), true);
+    return;
+  }
+  applyEdit(result.routine);
+}
+
+function renderDraftVariable(variable: Variable): HTMLLIElement {
+  const item = document.createElement("li");
+  item.className = "editor-variable";
+
+  const name = document.createElement("span");
+  name.className = "editor-variable-name";
+  name.textContent = `${variable.name} : ${variable.type}`;
+
+  const defaultInput = document.createElement("input");
+  defaultInput.type = "text";
+  defaultInput.placeholder = "valor por defecto";
+  defaultInput.value = variable.secret ? "" : String(variable.defaultValue ?? "");
+  defaultInput.disabled = variable.secret;
+  defaultInput.addEventListener("change", () => {
+    applyEdit(updateVariableDefault(draft!, variable.name, defaultInput.value));
+  });
+
+  const secretLabel = document.createElement("label");
+  const secretCheckbox = document.createElement("input");
+  secretCheckbox.type = "checkbox";
+  secretCheckbox.checked = variable.secret;
+  secretCheckbox.addEventListener("change", () => {
+    applyEdit(setVariableSecret(draft!, variable.name, secretCheckbox.checked));
+  });
+  secretLabel.append(secretCheckbox, document.createTextNode(" Secreto"));
+
+  const remove = dangerButton("Eliminar", () => {
+    const result = removeVariable(draft!, variable.name);
+    if (!result.ok) {
+      setStatus(result.issues.map((issue) => issue.message).join("; "), true);
+      return;
+    }
+    applyEdit(result.routine);
+  });
+
+  item.append(name, defaultInput, secretLabel, remove);
   return item;
 }
 
@@ -335,7 +409,7 @@ function dangerButton(text: string, onClick: () => void): HTMLButtonElement {
 
 function applyEdit(next: Routine): void {
   draft = next;
-  renderDraftSteps();
+  renderDraft();
 }
 
 function targetSummary(step: Step): string {
