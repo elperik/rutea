@@ -21,6 +21,14 @@ GPEX será el primer caso real para orientar el desarrollo, pero el núcleo segu
 
 Los valores de acceso no se almacenan en Git, Markdown, código, fixtures, logs ni almacenamiento de Chrome. El acceso inicial será realizado por el usuario y el futuro host Java utilizará referencias locales a secretos protegidos.
 
+## Modo de prueba actual (2026-06-28)
+
+Hasta que exista el almacén seguro de secretos (siguiente bloque de la Fase 4, ver `analisis/SIGUIENTE_AGENTE.md`):
+
+- el **inicio de sesión en GPEX lo hace la persona manualmente**; ningún agente introduce ni almacena la contraseña;
+- las pruebas **autónomas** se realizan sobre los **fixtures locales**, no sobre el intranet real;
+- el primer contacto con GPEX será un **reconocimiento técnico no destructivo y supervisado** (navegación y consulta en lectura) para elegir una rutina piloto de bajo riesgo, sin conservar información sensible en diagnósticos.
+
 ## Objetivos del piloto
 
 - registrar el proyecto y su dominio autorizado;

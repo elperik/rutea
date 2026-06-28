@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "id": "a1b2c3d4-1111-4111-8111-111111111111",
+  "name": "Consulta de ejemplo (fixtures)",
+  "description": "Rutina de demostración sobre el sitio de fixtures local (http://localhost:4321). Rellena el formulario y comprueba el mensaje de éxito. No contiene datos reales.",
+  "allowedDomains": ["localhost"],
+  "variables": [
+    { "name": "nombre", "type": "string", "secret": false, "defaultValue": "Ana Pérez" }
+  ],
+  "steps": [
+    {
+      "id": "a1b2c3d4-2222-4222-8222-222222222222",
+      "action": "fill",
+      "risk": "low",
+      "confirmationRequired": false,
+      "target": { "name": "nombre", "selectors": ["#nombre"] },
+      "value": "{{nombre}}"
+    },
+    {
+      "id": "a1b2c3d4-3333-4333-8333-333333333333",
+      "action": "fill",
+      "risk": "low",
+      "confirmationRequired": false,
+      "target": { "selectors": ["#email"] },
+      "value": "ana@example.com"
+    },
+    {
+      "id": "a1b2c3d4-4444-4444-8444-444444444444",
+      "action": "select",
+      "risk": "low",
+      "confirmationRequired": false,
+      "target": { "selectors": ["#pais"] },
+      "value": "es"
+    },
+    {
+      "id": "a1b2c3d4-5555-4555-8555-555555555555",
+      "action": "check",
+      "risk": "low",
+      "confirmationRequired": false,
+      "target": { "name": "boletin", "selectors": ["input[name=\"boletin\"]"] },
+      "value": true
+    },
+    {
+      "id": "a1b2c3d4-6666-4666-8666-666666666666",
+      "action": "click",
+      "risk": "low",
+      "confirmationRequired": false,
+      "target": { "selectors": ["#provocar-exito"] },
+      "postcondition": {
+        "type": "textVisible",
+        "value": "Operación completada con éxito"
+      }
+    }
+  ]
+}

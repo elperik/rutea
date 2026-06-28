@@ -2,6 +2,8 @@
 
 Esta carpeta es la fuente canónica para el análisis funcional, técnico y operativo de Rutea. Su objetivo no es acumular notas, sino permitir que desarrolladores y agentes autónomos entiendan rápidamente qué está decidido, qué se está construyendo, qué falta y con qué evidencia se considera terminado.
 
+> Para empezar rápido: [`ESTADO_DEL_PROYECTO.md`](ESTADO_DEL_PROYECTO.md) (resumen del progreso, cómo construir/probar y una prueba guiada) y [`SIGUIENTE_AGENTE.md`](SIGUIENTE_AGENTE.md) (por dónde continuar y cómo hacer pruebas autónomas).
+
 ## Estructura por estado
 
 ```text
