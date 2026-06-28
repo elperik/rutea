@@ -4,7 +4,8 @@ import {
   validateNativeMessage,
   validateNativeResponse,
   withinSizeLimit,
-  type NativeMessage
+  type NativeMessage,
+  type Step
 } from "../contracts/index.js";
 import { contentScriptId, originMatchPattern } from "./origins.js";
 
@@ -19,7 +20,8 @@ type RuteaMessage =
   | { type: "CLEAR_RECORDING" }
   | { type: "GET_STATUS" }
   | { type: "PING_NATIVE_HOST" }
-  | { type: "RUTEA_IS_RECORDING" };
+  | { type: "RUTEA_IS_RECORDING" }
+  | { type: "EXECUTE_STEP"; step: Step; value?: unknown };
 
 interface RuteaResponse {
   ok: boolean;
@@ -63,6 +65,8 @@ async function handleMessage(
       return getStatus();
     case "RUTEA_IS_RECORDING":
       return { ok: true, data: { recording: await isTabRecording(sender.tab?.id) } };
+    case "EXECUTE_STEP":
+      return executeStepOnActiveTab(message.step, message.value);
     case "PING_NATIVE_HOST":
       return negotiateWithHost();
     default:
@@ -191,6 +195,30 @@ async function unregisterRecorderForOriginIfUnused(origin: string): Promise<void
     await chrome.scripting.unregisterContentScripts({ ids: [contentScriptId(origin)] });
   } catch {
     // El script podía no estar registrado; no es un error operativo.
+  }
+}
+
+// Inyecta el player en la pestaña activa y le pide ejecutar un paso, devolviendo
+// el resultado al panel. La orquestación (estado, confirmaciones) vive en el panel.
+async function executeStepOnActiveTab(step: Step, value: unknown): Promise<RuteaResponse> {
+  const tab = await getActiveTab();
+  if (tab.id === undefined) {
+    return { ok: false, error: "La pestaña activa no tiene identificador" };
+  }
+
+  try {
+    await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      files: ["content/player.js"]
+    });
+    const outcome = await chrome.tabs.sendMessage(tab.id, {
+      type: "RUTEA_EXECUTE_STEP",
+      step,
+      value
+    });
+    return { ok: true, data: outcome };
+  } catch (error: unknown) {
+    return { ok: false, error: toErrorMessage(error) };
   }
 }
 

@@ -1,10 +1,14 @@
 # 016_EJECUTOR_MAQUINA_DE_ESTADOS
 
-Estado: En desarrollo
+Estado: Implementado
 Prioridad: Alta
 Responsable: Agente (sesión Claude Code) con supervisión de elperik
 Dependencias: `004_MODELO_DE_RUTINAS_Y_EJECUCION`, `015_VARIABLES`
 Última revisión: 2026-06-28
+
+Commit/PR: PR #8 (merge `10e2c09`)
+Verificación: 80 tests Vitest + lint/typecheck/build verdes (local y CI, incluido host Java).
+Riesgo residual: subconjunto de estados (sin context/recovering); sin reintentos/backoff temporales; el player que la consume llega en la 017.
 
 ## 1. Problema
 
@@ -83,8 +87,8 @@ Total Vitest: 80 (9 nuevos).
 
 ## 15. Resultado implementado
 
-Completar al mover a `implementado`.
+Entregado: `executor/execution.ts` (estados, eventos, reductor puro, confirmación por riesgo/flag, resultado por paso, catálogo cerrado de acciones). 9 pruebas nuevas (80 totales).
 
-Commit/PR: Pendiente
-Verificación: Pendiente
-Riesgo residual: Pendiente
+Commit/PR: PR #8 (merge `10e2c09`).
+Verificación: local + CI verdes.
+Riesgo residual: subconjunto de estados; sin reintentos temporales; player pendiente (017).

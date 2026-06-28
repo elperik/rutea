@@ -145,7 +145,7 @@ button.danger {
 }
 
 #routines li {
-  grid-template-columns: 1fr auto auto auto;
+  grid-template-columns: 1fr auto auto auto auto;
 }
 
 #routines li button {
