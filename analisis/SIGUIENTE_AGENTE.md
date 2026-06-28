@@ -23,12 +23,12 @@ Toolchain local (rutas fuera de PATH): JDK 21 en `C:\Program Files\Java\jdk-21.0
 - Diseño: añadir en el service worker comandos que reenvíen al host por `sendNativeMessage`; el panel detecta disponibilidad del host (vía `hello`) y elige fuente.
 - Aceptación: guardar en el panel persiste en SQLite del host; sin host, sigue funcionando en local.
 
-### 2.1b. Navegacion asistida con IA (nuevo frente)
-- Documento: `analisis/pendiente/020_NAVEGACION_ASISTIDA_IA.md`.
-- Objetivo: permitir que el usuario inserte instrucciones asistidas durante la grabacion y que, al reproducir, el host pida a una IA una propuesta **estructurada y validada** de acciones del catalogo cerrado.
-- Modelo a seguir de `elperik/track`: configuracion local de proveedores/modelos con principal y fallbacks, metricas de payload/tokens, timeouts y limpieza agresiva de HTML.
-- Diferencias obligatorias en Rutea: claves fuera del repo y de la extension, sin ejecucion de codigo IA, sin evasiones antiabuso, contexto HTML reducido/redactado y confirmacion para acciones sensibles como firmar.
-- Primer slice recomendado: contrato `assist` + UI para guardar instrucciones en la rutina + reductor/redactor HTML testeado, antes de integrar proveedores reales.
+### 2.1b. Navegación asistida con IA (nuevo frente)
+- Documento: `analisis/en_desarrollo/020_NAVEGACION_ASISTIDA_IA.md`.
+- Objetivo: permitir que el usuario inserte instrucciones asistidas durante la grabación y que, al reproducir, el host pida a una IA una propuesta **estructurada y validada** de acciones del catálogo cerrado.
+- Modelo a seguir de `elperik/track`: configuración local de proveedores/modelos con principal y fallbacks, métricas de payload/tokens, timeouts y limpieza agresiva de HTML.
+- Diferencias obligatorias en Rutea: claves fuera del repo y de la extensión, sin ejecución de código IA, sin evasiones antiabuso, contexto HTML reducido/redactado y confirmación para acciones sensibles como firmar.
+- Primer slice en curso: contratos `assist`, `ScreenContext`, request/proposal y pruebas; después reductor/redactor HTML y UI mínima.
 
 ### 2.2. Secretos en Windows Credential Manager (Fase 4)
 - Interfaz `SecretStore` en el host; implementación con JNA/DPAPI o Credential Manager. Guardar/leer/borrar por referencia opaca (`secret:...`).
