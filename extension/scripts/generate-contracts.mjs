@@ -102,7 +102,14 @@ async function main() {
     { name: "Routine", schema: schemas.routine },
     { name: "RoutineExport", schema: schemas.routineExport },
     { name: "ScreenContext", schema: schemas.screenContext },
-    { name: "AiNavigationRequest", schema: schemas.aiNavigationRequest },
+    {
+      name: "AiNavigationRequest",
+      schema: bundleExternalSchema(
+        schemas.aiNavigationRequest,
+        "screenContext",
+        schemas.screenContext
+      )
+    },
     { name: "AiNavigationProposal", schema: schemas.aiNavigationProposal },
     { name: "HelloRequest", schema: withRoot(schemas.hello, schemas.hello.$defs.helloRequest) },
     { name: "HelloResult", schema: withRoot(schemas.hello, schemas.hello.$defs.helloResult) }
@@ -133,6 +140,18 @@ async function main() {
 // Devuelve un subesquema como documento raíz, conservando $schema para la generación de tipos.
 function withRoot(parent, subschema) {
   return { $schema: parent.$schema, ...subschema };
+}
+
+// Inserta un esquema externo en `$defs` para que json-schema-to-typescript no necesite HTTP.
+function bundleExternalSchema(schema, propertyName, referencedSchema) {
+  const clone = structuredClone(schema);
+  const bundled = structuredClone(referencedSchema);
+  delete bundled.$schema;
+  delete bundled.$id;
+  delete bundled.title;
+  clone.$defs = { ...clone.$defs, [propertyName]: bundled };
+  clone.properties[propertyName] = { $ref: `#/$defs/${propertyName}` };
+  return clone;
 }
 
 // Elimina title/$id para que el nombre del tipo lo fije el generador, no el esquema.
