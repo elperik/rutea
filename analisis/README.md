@@ -69,6 +69,7 @@ Contiene la memoria técnica de funcionalidades concluidas. El documento se muev
 - [`implementado/011_CONTINUIDAD_ENTRE_NAVEGACIONES.md`](implementado/011_CONTINUIDAD_ENTRE_NAVEGACIONES.md): continuidad de grabación entre navegaciones dentro del origen autorizado.
 - [`implementado/012_RUTINA_Y_BIBLIOTECA.md`](implementado/012_RUTINA_Y_BIBLIOTECA.md): grabación → rutina validada, biblioteca y export/import sin secretos.
 - [`implementado/013_EDITOR_DE_PASOS.md`](implementado/013_EDITOR_DE_PASOS.md): editor de pasos (reordenar, eliminar, riesgo/confirmación/timeout, renombrar).
+- [`implementado/014_VERSIONADO_E_INTEGRIDAD.md`](implementado/014_VERSIONADO_E_INTEGRIDAD.md): sobre de exportación con hash SHA-256 y verificación de integridad al importar.
 
 ## Orden de lectura para agentes
 

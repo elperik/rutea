@@ -1,10 +1,14 @@
 # 014_VERSIONADO_E_INTEGRIDAD
 
-Estado: En desarrollo
+Estado: Implementado
 Prioridad: Alta
 Responsable: Agente (sesión Claude Code) con supervisión de elperik
 Dependencias: `012_RUTINA_Y_BIBLIOTECA`, `004_MODELO_DE_RUTINAS_Y_EJECUCION`, `005_SEGURIDAD_PRIVACIDAD_Y_PERMISOS`
 Última revisión: 2026-06-28
+
+Commit/PR: PR #6 (merge `1cae33b`)
+Verificación: 61 tests Vitest + lint/typecheck/build verdes (local y CI, incluido host Java).
+Riesgo residual: integridad por hash, no firma con clave; un solo nivel de versión por rutina (el historial llegará con la persistencia del host, Fase 4); sin E2E automatizado.
 
 ## 1. Problema
 
@@ -74,8 +78,8 @@ Total Vitest: 61 (6 nuevos en `version` e `io`).
 
 ## 15. Resultado implementado
 
-Completar al mover a `implementado`.
+Entregado: contrato `routine-export.schema.json`, `routines/version.ts` (canonicalización + hash SHA-256 + buildExport/verifyExport) y `routines/io.ts` con export como sobre e import que verifica el hash o acepta rutina cruda no verificada. UI export/import asíncronos. 6 pruebas nuevas (61 totales).
 
-Commit/PR: Pendiente
-Verificación: Pendiente
-Riesgo residual: Pendiente
+Commit/PR: PR #6 (merge `1cae33b`).
+Verificación: local + CI verdes.
+Riesgo residual: hash, no firma; sin historial multiversión; sin E2E automatizado.
