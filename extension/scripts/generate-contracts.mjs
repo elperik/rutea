@@ -108,7 +108,8 @@ async function main() {
         schemas.aiNavigationRequest,
         "screenContext",
         schemas.screenContext
-      )
+      ),
+      declareExternallyReferenced: false
     },
     { name: "AiNavigationProposal", schema: schemas.aiNavigationProposal },
     { name: "HelloRequest", schema: withRoot(schemas.hello, schemas.hello.$defs.helloRequest) },
@@ -120,7 +121,7 @@ async function main() {
     const ts = await compileType(stripNaming(target.schema), target.name, {
       bannerComment: "",
       additionalProperties: false,
-      declareExternallyReferenced: true,
+      declareExternallyReferenced: target.declareExternallyReferenced ?? true,
       $refOptions: { resolve: { http: false } }
     });
     typeBlocks.push(ts.trim());
@@ -149,9 +150,28 @@ function bundleExternalSchema(schema, propertyName, referencedSchema) {
   delete bundled.$schema;
   delete bundled.$id;
   delete bundled.title;
-  clone.$defs = { ...clone.$defs, [propertyName]: bundled };
+
+  const rewritten = rewriteInternalRefs(bundled, `#/$defs/${propertyName}/$defs/`);
+  clone.$defs = { ...clone.$defs, [propertyName]: rewritten };
   clone.properties[propertyName] = { $ref: `#/$defs/${propertyName}` };
   return clone;
+}
+
+function rewriteInternalRefs(value, defsPrefix) {
+  if (Array.isArray(value)) {
+    return value.map((item) => rewriteInternalRefs(item, defsPrefix));
+  }
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, child]) => [
+        key,
+        key === "$ref" && typeof child === "string" && child.startsWith("#/$defs/")
+          ? defsPrefix + child.slice("#/$defs/".length)
+          : rewriteInternalRefs(child, defsPrefix)
+      ])
+    );
+  }
+  return value;
 }
 
 // Elimina title/$id para que el nombre del tipo lo fije el generador, no el esquema.
