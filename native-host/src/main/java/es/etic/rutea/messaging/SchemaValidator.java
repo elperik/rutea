@@ -29,6 +29,7 @@ public final class SchemaValidator {
     private final JsonSchema screenContextSchema;
     private final JsonSchema aiNavigationRequestSchema;
     private final JsonSchema aiNavigationProposalSchema;
+    private final JsonSchema aiConfigSchema;
 
     public SchemaValidator() {
         JsonSchemaFactory factory = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V202012);
@@ -41,6 +42,9 @@ public final class SchemaValidator {
                 load(factory, "/schemas/contracts/ai-navigation-proposal.schema.json");
         this.helloRequestSchema =
                 loadSubschema(factory, "/schemas/contracts/hello.schema.json", "helloRequest");
+        // Esquema host-local: la configuracion IA no es un contrato compartido con la
+        // extension porque puede contener claves; vive bajo /schemas-local/.
+        this.aiConfigSchema = load(factory, "/schemas-local/ai-config.schema.json");
     }
 
     public List<String> validateNativeMessage(JsonNode node) {
@@ -69,6 +73,10 @@ public final class SchemaValidator {
 
     public List<String> validateAiNavigationProposal(JsonNode node) {
         return collect(aiNavigationProposalSchema.validate(node));
+    }
+
+    public List<String> validateAiConfig(JsonNode node) {
+        return collect(aiConfigSchema.validate(node));
     }
 
     private static List<String> collect(Set<ValidationMessage> messages) {

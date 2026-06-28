@@ -113,13 +113,14 @@ Antes de incorporar dependencias, documentar licencia, mantenimiento, tamano, se
 
 ## 10. Plan de implementacion
 
-- [ ] definir contrato de configuracion IA compartido;
-- [ ] crear almacenamiento local de configuracion sin claves en Git;
-- [ ] crear servicio Java de configuracion IA;
+- [x] definir contrato de configuracion IA (esquema host-local `ai-config.schema.json`);
+- [x] crear almacenamiento local de configuracion sin claves en Git (fichero gitignored + plantilla);
+- [x] crear servicio Java de configuracion IA (`AiConfigStore`, modelo `ai.config`);
 - [x] crear endpoint local de salud;
 - [x] crear panel HTML/CSS inicial servido por Java;
 - [x] listar proveedores/modelos y fallbacks;
-- [ ] guardar configuracion validada;
+- [x] guardar configuracion validada (`POST /api/ai-config`);
+- [x] gestionar claves desde el host (`POST /api/ai-secret`, nunca devueltas);
 - [x] probar proveedor/modelo desde el panel;
 - [x] registrar metricas de prueba;
 - [x] abrir panel desde extension;
@@ -128,13 +129,13 @@ Antes de incorporar dependencias, documentar licencia, mantenimiento, tamano, se
 
 ## 11. Pruebas
 
-- [ ] Java: validacion de configuracion IA;
+- [x] Java: validacion de configuracion IA (esquema + integridad referencial, `AiConfigStoreTest`);
 - [x] Java: servidor local solo loopback;
-- [x] Java: secretos no aparecen en logs/respuestas;
+- [x] Java: secretos no aparecen en logs/respuestas (`guardaClaveSinDevolverSuValor`, separacion en `AiConfigStore`);
 - [x] Java: prueba fake de proveedor;
 - [x] Extension: boton abre panel sin secretos;
 - [x] UI: capturas Playwright desktop/mobile del panel;
-- [ ] Seguridad: escaneo de claves en repo.
+- [ ] Seguridad: escaneo de claves en repo (pendiente de automatizar en CI).
 
 ## 12. Criterios de aceptacion
 
@@ -162,35 +163,36 @@ Antes de incorporar dependencias, documentar licencia, mantenimiento, tamano, se
 - 2026-06-28: la extension solo abre `http://127.0.0.1:8765/`; no recibe configuracion sensible ni almacena claves.
 - 2026-06-28: el primer proveedor probado es `fake/fake-structured`. OpenAI compatible y Gemini quedan visibles como proveedores planificados, pero requieren configuracion real y almacen seguro de secretos antes de usarse.
 - 2026-06-28: las metricas actuales son de prueba de modelo: latencia, HTTP, tokens estimados y resultado. Falta persistir historico de llamadas IA reales.
+- 2026-06-28: se implementa la configuracion IA real del host inspirada en `track`. Modelo en `es.etic.rutea.ai.config` (`AiConfig`, `AiProvider`, `AiModel`, `AiSelection`, `AiConfigStore`, `AiConfigSecrets`). Catalogo + seleccion principal/fallback1/fallback2; capacidades por modelo (`vision`, `streaming`, `structuredOutputs`, `toolCalling`) y `params` libres (acomoda OpenAI-compatible y Gemini).
+- 2026-06-28: decision sobre claves. El usuario pidio "un fichero de configuracion dentro del proyecto, parecido a `track`". `track` versiona `config.php` con claves en claro, lo que contradice las restricciones de Rutea. Reconciliacion: fichero local unico estilo `track` (`native-host/config/ai-config.json`) con claves inline, pero **gitignored**, con plantilla `ai-config.example.json` versionada sin claves. Al cargar, las claves se separan a `AiConfigSecrets` (solo host); el panel nunca las devuelve, solo `hasSecret`. Ruta configurable con `--ai-config=`/`RUTEA_AI_CONFIG`; sin fichero se sirve un catalogo por defecto sin secretos.
+- 2026-06-28: el esquema de config IA es host-local (`/schemas-local/ai-config.schema.json`), no `shared/`, porque puede contener secretos y la extension no debe consumirlo. `SchemaValidator.validateAiConfig` valida el fichero como frontera; la integridad selección→catalogo se valida en Java.
+- 2026-06-28: nuevos endpoints del panel: `GET /api/ai-config` (catalogo redactado + `hasSecret` + `selection` + `configured`/`configPath`), `POST /api/ai-config` (guardar seleccion validada), `POST /api/ai-secret` (fijar/borrar clave por proveedor sin devolver su valor). `ai-test` exige clave para proveedores reales y responde `501 backend_not_implemented` (la llamada de red real es el siguiente slice).
 
 ## 15. Resultado implementado
 
-Primer corte implementado:
+Segundo corte (configuracion IA real):
 
-- servidor local `LocalControlPanelServer` con rutas `/`, `/assets/panel.css`, `/assets/panel.js`, `/api/health`, `/api/ai-config` y `/api/ai-test`;
-- panel web local con estado del host, metricas basicas, tarjetas de proveedores, formulario de prueba IA, listado de rutinas y politica de seguridad;
-- modo de arranque `--panel` y opcion `--panel-port=<puerto>` en el host Java;
-- recursos estaticos incluidos en el empaquetado Maven;
-- boton `Abrir panel` en el sidepanel de la extension;
-- pruebas Java del servidor local y prueba fake de IA;
-- verificacion visual con Playwright en escritorio y movil.
+- modelo de configuracion IA en `es.etic.rutea.ai.config` con catalogo de proveedores, capacidades por modelo, `params` libres y seleccion principal/fallback1/fallback2;
+- `AiConfigStore`: carga/validacion (esquema + integridad referencial)/guardado de un fichero local estilo `track`, con separacion de claves a `AiConfigSecrets`;
+- fichero local `native-host/config/ai-config.json` gitignored + plantilla `ai-config.example.json` versionada sin claves; catalogo por defecto empaquetado sin secretos;
+- esquema host-local `/schemas-local/ai-config.schema.json` validado por `SchemaValidator`;
+- endpoints reales: `GET /api/ai-config` (redactado), `POST /api/ai-config` (seleccion validada), `POST /api/ai-secret` (clave solo host, nunca devuelta);
+- panel con estado de configuracion (origen y ruta), editor de seleccion principal/fallbacks y alta/borrado de clave por proveedor; el valor de la clave no se muestra;
+- ruta de config configurable por `--ai-config=<ruta>` o `RUTEA_AI_CONFIG`.
 
-Commit/PR: Pendiente
-Verificacion:
+Primer corte (previo): servidor local `LocalControlPanelServer`, panel web, `--panel`/`--panel-port`, boton `Abrir panel` en la extension, prueba fake de IA y capturas Playwright.
 
-- `npm --prefix extension run lint`
-- `npm --prefix extension run typecheck`
-- `npm --prefix extension run build`
-- `npm --prefix extension test`
-- `mvn -f native-host/pom.xml -B test package`
-- `Invoke-WebRequest http://127.0.0.1:8765/api/health`
-- `Invoke-WebRequest http://127.0.0.1:8765/api/ai-config`
-- Playwright: `output/playwright/control-panel-1365x900.png` y `output/playwright/control-panel-390x900.png`
+Commit/PR: rama `feat/020-navegacion-asistida-ia`
+Verificacion local 2026-06-28:
+
+- `npm --prefix extension run lint`; `npm --prefix extension run typecheck`; `npm --prefix extension run build`; `npm --prefix extension test` (107 tests) — OK;
+- `mvn -f native-host/pom.xml -B test package` — 35 tests OK (incluye `AiConfigStoreTest` y `LocalControlPanelServerTest`);
+- smoke en vivo (`--panel --panel-port=8799 --ai-config=<temp>`): `GET /api/ai-config` sirve catalogo por defecto sin `apiKey`; `POST /api/ai-secret` devuelve solo `hasSecret:true`; `POST /api/ai-config` persiste la seleccion (`configured:true`); la clave queda en el fichero del host y no aparece en ninguna respuesta del panel.
 
 Riesgo residual:
 
-- no existe todavia persistencia real editable de configuracion IA;
-- no existe todavia almacen seguro de claves;
-- no se ha conectado ningun proveedor real de `track`;
+- los backends de red reales (OpenAI-compatible/Gemini) aun no estan implementados; `ai-test` para proveedores reales responde `501 backend_not_implemented`. Por tanto no hay metricas de llamadas IA reales ni historico persistido;
+- el almacen de claves es un fichero local con permisos del sistema de ficheros (no cifrado ni Credential Manager); queda detras de `AiConfigSecrets`/`AiConfigStore` para sustituirlo sin tocar el panel;
 - el panel local todavia no usa token anti-CSRF/origen para llamadas desde navegador;
-- el puerto fijo `8765` puede colisionar y requiere deteccion o configuracion de usuario.
+- el puerto fijo `8765` puede colisionar y requiere deteccion o configuracion de usuario;
+- falta automatizar en CI un escaneo de claves del repo.

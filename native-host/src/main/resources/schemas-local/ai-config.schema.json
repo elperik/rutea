@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rutea.local/schemas-local/ai-config.schema.json",
+  "title": "RuteaAiConfig",
+  "description": "Configuracion IA local del host Java. Inspirada en el catalogo de proveedores de 'track'. Vive solo en el host (fichero local gitignored). El campo apiKey es un secreto: se separa al cargar y el panel nunca lo devuelve.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "providers", "selection"],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "providers": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/provider" }
+    },
+    "selection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["main"],
+      "properties": {
+        "main": { "$ref": "#/$defs/selectionRef" },
+        "fallback1": { "$ref": "#/$defs/selectionRef" },
+        "fallback2": { "$ref": "#/$defs/selectionRef" }
+      }
+    }
+  },
+  "$defs": {
+    "provider": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "kind", "models"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]*$",
+          "maxLength": 64
+        },
+        "name": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "kind": {
+          "type": "string",
+          "enum": ["fake", "openai-compatible", "gemini"]
+        },
+        "apiBaseUrl": { "type": "string", "format": "uri", "maxLength": 512 },
+        "apiKey": {
+          "type": "string",
+          "maxLength": 4096,
+          "description": "Secreto. Se separa a SecretStore al cargar y nunca se expone por el panel."
+        },
+        "models": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/model" }
+        }
+      }
+    },
+    "model": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "name": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "vision": { "type": "boolean" },
+        "streaming": { "type": "boolean" },
+        "structuredOutputs": { "type": "boolean" },
+        "toolCalling": { "type": "boolean" },
+        "notes": { "type": "string", "maxLength": 500 },
+        "params": {
+          "type": "object",
+          "description": "Parametros del modelo (temperature, top_p/topP, max_tokens/maxOutputTokens, extra_body, ...). Formato libre para acomodar OpenAI-compatible y Gemini."
+        }
+      }
+    },
+    "selectionRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider", "model"],
+      "properties": {
+        "provider": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "model": { "type": "string", "minLength": 1, "maxLength": 200 }
+      }
+    }
+  }
+}

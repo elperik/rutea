@@ -2,6 +2,12 @@ const state = {
   config: null
 };
 
+const SLOTS = [
+  { key: "main", provider: "#sel-main-provider", model: "#sel-main-model" },
+  { key: "fallback1", provider: "#sel-fb1-provider", model: "#sel-fb1-model" },
+  { key: "fallback2", provider: "#sel-fb2-provider", model: "#sel-fb2-model" }
+];
+
 const els = {
   healthState: document.querySelector("#health-state"),
   serviceName: document.querySelector("#service-name"),
@@ -9,6 +15,7 @@ const els = {
   routineCount: document.querySelector("#routine-count"),
   mainProvider: document.querySelector("#main-provider"),
   secretsExtension: document.querySelector("#secrets-extension"),
+  configStatus: document.querySelector("#config-status"),
   providers: document.querySelector("#providers"),
   routineList: document.querySelector("#routine-list"),
   provider: document.querySelector("#provider"),
@@ -16,7 +23,9 @@ const els = {
   prompt: document.querySelector("#prompt"),
   testForm: document.querySelector("#ai-test"),
   result: document.querySelector("#test-result"),
-  refresh: document.querySelector("#refresh")
+  refresh: document.querySelector("#refresh"),
+  selectionForm: document.querySelector("#selection-form"),
+  selectionResult: document.querySelector("#selection-result")
 };
 
 els.refresh.addEventListener("click", () => void load());
@@ -25,6 +34,13 @@ els.testForm.addEventListener("submit", (event) => {
   event.preventDefault();
   void testModel();
 });
+els.selectionForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  void saveSelection();
+});
+for (const slot of SLOTS) {
+  document.querySelector(slot.provider).addEventListener("change", () => populateSlotModels(slot));
+}
 
 void load();
 
@@ -54,9 +70,20 @@ function renderHealth(health) {
 }
 
 function renderConfig(config) {
-  const main = config.active?.main;
+  const main = config.selection?.main;
   els.mainProvider.textContent = main ? `${main.provider}/${main.model}` : "-";
+
+  if (config.configError) {
+    els.configStatus.textContent = `Error de configuracion: ${config.configError}`;
+    els.configStatus.className = "config-status error";
+  } else {
+    const origin = config.configured ? "fichero local" : "catalogo por defecto";
+    els.configStatus.textContent = `Origen: ${origin} · ${config.configPath}`;
+    els.configStatus.className = "config-status";
+  }
+
   els.providers.replaceChildren(...config.providers.map(renderProvider));
+  populateSelectionEditor(config);
   populateProviderSelect(config.providers);
   renderRoutines(config.routines ?? []);
 }
@@ -69,12 +96,18 @@ function renderProvider(provider) {
   const title = document.createElement("h3");
   title.textContent = provider.name;
   const badge = document.createElement("span");
-  badge.className = provider.requiresSecret ? "badge" : "badge ready";
-  badge.textContent = provider.requiresSecret ? "requiere clave" : "listo";
+  const ready = !provider.requiresSecret || provider.hasSecret;
+  badge.className = ready ? "badge ready" : "badge";
+  badge.textContent = !provider.requiresSecret
+    ? "sin clave"
+    : provider.hasSecret
+      ? "clave configurada"
+      : "requiere clave";
   header.append(title, badge);
 
-  const description = document.createElement("p");
-  description.textContent = provider.description;
+  const meta = document.createElement("p");
+  meta.className = "provider-meta";
+  meta.textContent = provider.apiBaseUrl ? `${provider.kind} · ${provider.apiBaseUrl}` : provider.kind;
 
   const models = document.createElement("div");
   models.className = "model-list";
@@ -84,35 +117,129 @@ function renderProvider(provider) {
     models.append(item);
   }
 
-  article.append(header, description, models);
+  article.append(header, meta, models);
+
+  if (provider.requiresSecret) {
+    article.append(renderSecretForm(provider));
+  }
   return article;
 }
 
+function renderSecretForm(provider) {
+  const form = document.createElement("form");
+  form.className = "secret-form";
+  const input = document.createElement("input");
+  input.type = "password";
+  input.placeholder = provider.hasSecret ? "Reemplazar clave" : "Pegar clave API";
+  input.autocomplete = "off";
+  const save = document.createElement("button");
+  save.type = "submit";
+  save.textContent = "Guardar clave";
+  const clear = document.createElement("button");
+  clear.type = "button";
+  clear.className = "ghost";
+  clear.textContent = "Borrar";
+  const status = document.createElement("span");
+  status.className = "secret-status";
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    await saveSecret(provider.id, input.value, status);
+    input.value = "";
+  });
+  clear.addEventListener("click", async () => {
+    await saveSecret(provider.id, "", status);
+    input.value = "";
+  });
+
+  form.append(input, save, clear, status);
+  return form;
+}
+
+async function saveSecret(providerId, apiKey, status) {
+  status.textContent = "Guardando...";
+  try {
+    await fetchJson("/api/ai-secret", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ provider: providerId, apiKey })
+    });
+    status.textContent = apiKey ? "Clave guardada" : "Clave borrada";
+    await load();
+  } catch (error) {
+    status.textContent = error instanceof Error ? error.message : String(error);
+  }
+}
+
+function populateSelectionEditor(config) {
+  for (const slot of SLOTS) {
+    const providerSelect = document.querySelector(slot.provider);
+    const current = config.selection?.[slot.key];
+    const options = [optionEl("", slot.key === "main" ? "(obligatorio)" : "(sin fallback)")];
+    for (const provider of config.providers) {
+      options.push(optionEl(provider.id, provider.name, provider.id === current?.provider));
+    }
+    providerSelect.replaceChildren(...options);
+    populateSlotModels(slot, current?.model);
+  }
+}
+
+function populateSlotModels(slot, preselectModel) {
+  const providerSelect = document.querySelector(slot.provider);
+  const modelSelect = document.querySelector(slot.model);
+  const provider = state.config?.providers.find((candidate) => candidate.id === providerSelect.value);
+  const models = provider?.models ?? [];
+  modelSelect.replaceChildren(
+    ...models.map((model) => optionEl(model.id, model.name, model.id === preselectModel))
+  );
+  modelSelect.disabled = models.length === 0;
+}
+
+async function saveSelection() {
+  els.selectionResult.textContent = "Guardando...";
+  const selection = {};
+  for (const slot of SLOTS) {
+    const provider = document.querySelector(slot.provider).value;
+    const model = document.querySelector(slot.model).value;
+    if (provider && model) {
+      selection[slot.key] = { provider, model };
+    }
+  }
+  try {
+    const config = await fetchJson("/api/ai-config", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ selection })
+    });
+    state.config = config;
+    renderConfig(config);
+    els.selectionResult.textContent = "Seleccion guardada";
+  } catch (error) {
+    els.selectionResult.textContent = error instanceof Error ? error.message : String(error);
+  }
+}
+
+function optionEl(value, label, selected = false) {
+  const option = document.createElement("option");
+  option.value = value;
+  option.textContent = label;
+  option.selected = selected;
+  return option;
+}
+
 function populateProviderSelect(providers) {
-  const selected = els.provider.value;
+  const selected = els.provider.value || state.config?.selection?.main?.provider;
   els.provider.replaceChildren(
-    ...providers.map((provider) => {
-      const option = document.createElement("option");
-      option.value = provider.id;
-      option.textContent = provider.name;
-      option.selected = provider.id === selected || provider.id === state.config?.active?.main?.provider;
-      return option;
-    })
+    ...providers.map((provider) => optionEl(provider.id, provider.name, provider.id === selected))
   );
   populateModels();
 }
 
 function populateModels() {
   const provider = state.config?.providers.find((candidate) => candidate.id === els.provider.value);
-  const activeModel = state.config?.active?.main?.model;
+  const activeModel = state.config?.selection?.main?.model;
   els.model.replaceChildren(
-    ...(provider?.models ?? []).map((model) => {
-      const option = document.createElement("option");
-      option.value = model.id;
-      option.textContent = model.name;
-      option.selected = model.id === activeModel;
-      return option;
-    })
+    ...(provider?.models ?? []).map((model) => optionEl(model.id, model.name, model.id === activeModel))
   );
 }
 

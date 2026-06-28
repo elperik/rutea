@@ -21,6 +21,8 @@ native-host/target/
 .env
 .env.*
 !.env.example
+# Config IA local del host (claves inline). La plantilla *.example.json si se versiona.
+native-host/config/ai-config.json
 *.sqlite
 *.sqlite3
 *.db

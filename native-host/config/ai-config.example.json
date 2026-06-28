@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "providers": [
+    {
+      "id": "fake",
+      "name": "Fake local",
+      "kind": "fake",
+      "models": [
+        {
+          "id": "fake-structured",
+          "name": "Fake Structured",
+          "structuredOutputs": true,
+          "notes": "Backend offline para pruebas sin secretos"
+        }
+      ]
+    },
+    {
+      "id": "openrouter",
+      "name": "OpenRouter",
+      "kind": "openai-compatible",
+      "apiBaseUrl": "https://openrouter.ai/api/v1/chat/completions",
+      "apiKey": "PON-AQUI-TU-CLAVE-OPENROUTER",
+      "models": [
+        {
+          "id": "openrouter/free",
+          "name": "Free Models Router",
+          "vision": true,
+          "structuredOutputs": true,
+          "toolCalling": true,
+          "params": { "temperature": 0.7, "top_p": 0.95, "max_tokens": 8192 }
+        }
+      ]
+    },
+    {
+      "id": "gemini",
+      "name": "Google Gemini",
+      "kind": "gemini",
+      "apiBaseUrl": "https://generativelanguage.googleapis.com/v1beta/models/",
+      "apiKey": "PON-AQUI-TU-CLAVE-GEMINI",
+      "models": [
+        {
+          "id": "gemini-2.5-flash",
+          "name": "Gemini 2.5 Flash",
+          "vision": true,
+          "structuredOutputs": true,
+          "params": { "temperature": 0.3, "topP": 0.95, "maxOutputTokens": 8192 }
+        }
+      ]
+    }
+  ],
+  "selection": {
+    "main": { "provider": "fake", "model": "fake-structured" },
+    "fallback1": { "provider": "openrouter", "model": "openrouter/free" },
+    "fallback2": { "provider": "gemini", "model": "gemini-2.5-flash" }
+  }
+}

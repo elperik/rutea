@@ -480,12 +480,12 @@ Siguientes slices:
 ### Slice 020-D — Configuración IA y backend structured
 
 - [x] interfaz `AiNavigationBackend`;
-- [ ] configuración local multiproveedor inspirada en `track`;
-- [ ] cadena principal/fallback1/fallback2 por configuración;
-- [ ] catálogo de modelos con capacidades (`vision`, `streaming`, `structuredOutputs`, `toolCalling`) y parámetros;
-- [ ] almacenamiento seguro de claves fuera de Git y fuera de la extensión;
-- [ ] `OpenAiCompatibleBackend` para proveedores OpenAI-compatible;
-- [ ] `GeminiBackend`;
+- [x] configuración local multiproveedor inspirada en `track` (host, fichero local validado);
+- [x] cadena principal/fallback1/fallback2 por configuración;
+- [x] catálogo de modelos con capacidades (`vision`, `streaming`, `structuredOutputs`, `toolCalling`) y parámetros;
+- [x] almacenamiento seguro de claves fuera de Git y fuera de la extensión (fichero local gitignored, secretos separados del catálogo, panel solo expone `hasSecret`);
+- [ ] `OpenAiCompatibleBackend` para proveedores OpenAI-compatible (siguiente: llamada de red real);
+- [ ] `GeminiBackend` (siguiente: llamada de red real);
 - [ ] `OpenAiStructuredBackend` opcional;
 - [x] Fake/WireMock;
 - [ ] métricas y límites;
@@ -576,6 +576,8 @@ Siguientes slices:
 - 2026-06-28: se añade el mensaje Native Messaging `ai.navigation.propose`; el host valida request/proposal y la extensión dispone de comando interno `AI_NAVIGATION_PROPOSE` para enviar peticiones validadas al host.
 - 2026-06-28: `hello` del host declara la capacidad `ai.navigation.propose`.
 - 2026-06-28: se revisa `C:\proyectos\track` y se adopta como referencia de configuración IA: catálogo local de proveedores/modelos, selección principal y fallbacks, flags por modelo (`vision`, `streaming`, parámetros), logging de payload/tokens/duración/HTTP y limpieza agresiva de HTML. Rutea no copiará claves ni secretos de `track`; solo reutilizará el patrón arquitectónico.
+- 2026-06-28: se implementa la configuración IA real del host (`es.etic.rutea.ai.config`): `AiConfigStore` lee/valida/guarda un fichero local estilo `track`. A diferencia de `track` (que versiona `config.php` con claves en claro), el fichero `native-host/config/ai-config.json` está **gitignored** y al cargar las claves se separan a `AiConfigSecrets`; el catálogo en memoria (`AiConfig`) no las contiene y el panel solo expone `hasSecret`. Plantilla `ai-config.example.json` versionada sin claves.
+- 2026-06-28: el esquema de configuración IA es **host-local** (`/schemas-local/ai-config.schema.json`), no un contrato compartido en `shared/`, precisamente porque puede contener claves y la extensión nunca debe consumirlo. La integridad referencial selección→catálogo se valida en Java (`AiConfig.referenceErrors`) porque JSON Schema no expresa referencias cruzadas.
 
 ## 24. Resultado implementado
 

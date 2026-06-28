@@ -63,6 +63,31 @@
           <button id="refresh" type="button">Actualizar</button>
         </div>
 
+        <p id="config-status" class="config-status"></p>
+
+        <form id="selection-form" class="selection-form">
+          <h3>Seleccion activa</h3>
+          <div class="selection-row">
+            <span>Principal</span>
+            <select id="sel-main-provider"></select>
+            <select id="sel-main-model"></select>
+          </div>
+          <div class="selection-row">
+            <span>Fallback 1</span>
+            <select id="sel-fb1-provider"></select>
+            <select id="sel-fb1-model"></select>
+          </div>
+          <div class="selection-row">
+            <span>Fallback 2</span>
+            <select id="sel-fb2-provider"></select>
+            <select id="sel-fb2-model"></select>
+          </div>
+          <div class="selection-actions">
+            <button type="submit">Guardar seleccion</button>
+            <span id="selection-result"></span>
+          </div>
+        </form>
+
         <div id="providers" class="provider-grid"></div>
 
         <form id="ai-test" class="test-form">
