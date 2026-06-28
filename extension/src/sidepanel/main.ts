@@ -1,5 +1,5 @@
 import { buildRoutineFromRecording, type RecordedStepInput } from "../routines/build.js";
-import { parseRoutine, serializeRoutine } from "../routines/io.js";
+import { parseRoutineDocument, serializeRoutineExport } from "../routines/io.js";
 import { deleteRoutine, listRoutines, saveRoutine } from "../routines/library.js";
 import { moveStep, removeStep, renameRoutine, updateStep } from "../routines/edit.js";
 import { validateRoutine, type Routine, type Step } from "../contracts/index.js";
@@ -203,7 +203,7 @@ function renderRoutineItem(routine: Routine): HTMLLIElement {
   exportButton.type = "button";
   exportButton.className = "secondary";
   exportButton.textContent = "Exportar";
-  exportButton.addEventListener("click", () => exportRoutine(routine));
+  exportButton.addEventListener("click", () => void exportRoutine(routine));
 
   const deleteButton = document.createElement("button");
   deleteButton.type = "button";
@@ -360,8 +360,8 @@ async function saveDraft(): Promise<void> {
   await refreshRoutines();
 }
 
-function exportRoutine(routine: Routine): void {
-  const blob = new Blob([serializeRoutine(routine)], { type: "application/json" });
+async function exportRoutine(routine: Routine): Promise<void> {
+  const blob = new Blob([await serializeRoutineExport(routine)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
@@ -387,7 +387,7 @@ async function importFromFile(event: Event): Promise<void> {
     return;
   }
 
-  const result = parseRoutine(await file.text());
+  const result = await parseRoutineDocument(await file.text());
   if (!result.ok) {
     setStatus(
       `Importación rechazada: ${result.issues.map((i) => `${i.path} ${i.message}`.trim()).join("; ")}`,
@@ -397,7 +397,11 @@ async function importFromFile(event: Event): Promise<void> {
   }
 
   await saveRoutine(result.routine);
-  setStatus("Rutina importada");
+  setStatus(
+    result.verified
+      ? "Rutina importada (integridad verificada)"
+      : "Rutina importada (sin verificar)"
+  );
   await refreshRoutines();
 }
 

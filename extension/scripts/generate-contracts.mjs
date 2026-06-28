@@ -24,7 +24,8 @@ const schemaFiles = {
   nativeMessage: "contracts/native-message.schema.json",
   nativeResponse: "contracts/native-response.schema.json",
   hello: "contracts/hello.schema.json",
-  routine: "routine.schema.json"
+  routine: "routine.schema.json",
+  routineExport: "contracts/routine-export.schema.json"
 };
 
 async function loadSchema(relativePath) {
@@ -54,6 +55,7 @@ async function main() {
     nativeMessage: schemas.nativeMessage.$id,
     nativeResponse: schemas.nativeResponse.$id,
     routine: schemas.routine.$id,
+    routineExport: schemas.routineExport.$id,
     helloRequest: `${schemas.hello.$id}#/$defs/helloRequest`,
     helloResult: `${schemas.hello.$id}#/$defs/helloResult`
   };
@@ -93,6 +95,7 @@ async function main() {
     { name: "NativeMessage", schema: schemas.nativeMessage },
     { name: "NativeResponse", schema: schemas.nativeResponse },
     { name: "Routine", schema: schemas.routine },
+    { name: "RoutineExport", schema: schemas.routineExport },
     { name: "HelloRequest", schema: withRoot(schemas.hello, schemas.hello.$defs.helloRequest) },
     { name: "HelloResult", schema: withRoot(schemas.hello, schemas.hello.$defs.helloResult) }
   ];
