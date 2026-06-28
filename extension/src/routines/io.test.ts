@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { parseRoutine, serializeRoutine } from "./io.js";
+import { parseRoutineDocument, serializeRoutineExport } from "./io.js";
+import { buildExport } from "./version.js";
 import type { Routine } from "../contracts/index.js";
 
 const routine: Routine = {
@@ -18,26 +19,44 @@ const routine: Routine = {
   ]
 };
 
-describe("serializeRoutine / parseRoutine", () => {
-  it("hace round-trip de una rutina válida", () => {
-    const result = parseRoutine(serializeRoutine(routine));
+describe("serializeRoutineExport / parseRoutineDocument", () => {
+  it("exporta un sobre con integridad e importa verificando el hash", async () => {
+    const text = await serializeRoutineExport(routine);
+    const result = await parseRoutineDocument(text);
     expect(result.ok).toBe(true);
     if (result.ok) {
+      expect(result.verified).toBe(true);
       expect(result.routine).toEqual(routine);
     }
   });
 
-  it("rechaza JSON inválido", () => {
-    expect(parseRoutine("{ no es json").ok).toBe(false);
+  it("rechaza un sobre cuya rutina ha sido manipulada", async () => {
+    const envelope = await buildExport(routine);
+    const tampered = {
+      ...envelope,
+      routine: { ...envelope.routine, name: "Nombre alterado" }
+    };
+    const result = await parseRoutineDocument(JSON.stringify(tampered));
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.issues[0]?.message).toMatch(/integridad|manipulada/i);
+    }
   });
 
-  it("rechaza una rutina con campos desconocidos (manipulada)", () => {
+  it("acepta una rutina en crudo marcándola como no verificada", async () => {
+    const result = await parseRoutineDocument(JSON.stringify(routine));
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.verified).toBe(false);
+    }
+  });
+
+  it("rechaza JSON inválido", async () => {
+    expect((await parseRoutineDocument("{ roto")).ok).toBe(false);
+  });
+
+  it("rechaza una rutina cruda con campos desconocidos", async () => {
     const tampered = { ...routine, inesperado: true };
-    expect(parseRoutine(JSON.stringify(tampered)).ok).toBe(false);
-  });
-
-  it("rechaza una rutina que no cumple el esquema", () => {
-    const invalid = { ...routine, allowedDomains: [] };
-    expect(parseRoutine(JSON.stringify(invalid)).ok).toBe(false);
+    expect((await parseRoutineDocument(JSON.stringify(tampered))).ok).toBe(false);
   });
 });

@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rutea.local/schemas/routine-export.schema.json",
+  "title": "Sobre de exportación de rutina",
+  "description": "Envoltorio de exportación/importación de una rutina con metadatos e integridad. La rutina interna se valida aparte contra routine.schema.json; aquí solo se describe el sobre.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "integrity", "routine"],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "exportedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "integrity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["algorithm", "hash"],
+      "properties": {
+        "algorithm": {
+          "const": "SHA-256"
+        },
+        "hash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "routine": {
+      "type": "object"
+    }
+  }
+}

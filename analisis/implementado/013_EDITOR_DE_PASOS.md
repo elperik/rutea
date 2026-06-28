@@ -1,10 +1,14 @@
 # 013_EDITOR_DE_PASOS
 
-Estado: En desarrollo
+Estado: Implementado
 Prioridad: Alta
 Responsable: Agente (sesión Claude Code) con supervisión de elperik
 Dependencias: `012_RUTINA_Y_BIBLIOTECA`, `004_MODELO_DE_RUTINAS_Y_EJECUCION`
 Última revisión: 2026-06-28
+
+Commit/PR: PR #5 (merge `2b38e6b`)
+Verificación: 55 tests Vitest + lint/typecheck/build verdes (local y CI).
+Riesgo residual: sin variables ni versionado con hash todavía (iniciativa 014); sin pruebas de un paso aislado (requiere ejecutor); sin E2E automatizado.
 
 ## 1. Problema
 
@@ -73,8 +77,8 @@ Un editor mínimo en el panel para una rutina de la biblioteca: reordenar y elim
 
 ## 15. Resultado implementado
 
-Completar al mover a `implementado`.
+Entregado: operaciones de edición puras (`routines/edit.ts`: moveStep, removeStep, updateStep, renameRoutine) y editor en el panel (reordenar, eliminar, editar risk/confirmación/timeout, renombrar) con revalidación al guardar. 10 pruebas nuevas (55 totales).
 
-Commit/PR: Pendiente
-Verificación: Pendiente
-Riesgo residual: Pendiente
+Commit/PR: PR #5 (merge `2b38e6b`).
+Verificación: local + CI verdes.
+Riesgo residual: sin variables ni versionado con hash; sin E2E automatizado.

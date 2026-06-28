@@ -3,7 +3,14 @@
 // validadores standalone (sin `eval`, compatibles con la CSP de Manifest V3).
 
 import * as validators from "./validators.generated.js";
-import type { NativeMessage, NativeResponse, HelloRequest, HelloResult, Routine } from "./types.js";
+import type {
+  NativeMessage,
+  NativeResponse,
+  HelloRequest,
+  HelloResult,
+  Routine,
+  RoutineExport
+} from "./types.js";
 
 export type {
   NativeMessage,
@@ -11,6 +18,7 @@ export type {
   HelloRequest,
   HelloResult,
   Routine,
+  RoutineExport,
   Variable,
   Step,
   Target,
@@ -68,6 +76,10 @@ export function validateHelloResult(data: unknown): ValidationResult<HelloResult
 
 export function validateRoutine(data: unknown): ValidationResult<Routine> {
   return validateWith<Routine>(validators.routine, data);
+}
+
+export function validateRoutineExport(data: unknown): ValidationResult<RoutineExport> {
+  return validateWith<RoutineExport>(validators.routineExport, data);
 }
 
 /** Comprueba que el valor serializado no supere el límite de tamaño del protocolo. */
