@@ -25,7 +25,10 @@ const schemaFiles = {
   nativeResponse: "contracts/native-response.schema.json",
   hello: "contracts/hello.schema.json",
   routine: "routine.schema.json",
-  routineExport: "contracts/routine-export.schema.json"
+  routineExport: "contracts/routine-export.schema.json",
+  screenContext: "contracts/screen-context.schema.json",
+  aiNavigationRequest: "contracts/ai-navigation-request.schema.json",
+  aiNavigationProposal: "contracts/ai-navigation-proposal.schema.json"
 };
 
 async function loadSchema(relativePath) {
@@ -56,12 +59,14 @@ async function main() {
     nativeResponse: schemas.nativeResponse.$id,
     routine: schemas.routine.$id,
     routineExport: schemas.routineExport.$id,
+    screenContext: schemas.screenContext.$id,
+    aiNavigationRequest: schemas.aiNavigationRequest.$id,
+    aiNavigationProposal: schemas.aiNavigationProposal.$id,
     helloRequest: `${schemas.hello.$id}#/$defs/helloRequest`,
     helloResult: `${schemas.hello.$id}#/$defs/helloResult`
   };
 
   await mkdir(outDir, { recursive: true });
-
   const validatorSource = standaloneCode(ajv, validatorRefs);
   const generatedHeader =
     "// Archivo generado por scripts/generate-contracts.mjs. No editar a mano.\n";
@@ -96,6 +101,9 @@ async function main() {
     { name: "NativeResponse", schema: schemas.nativeResponse },
     { name: "Routine", schema: schemas.routine },
     { name: "RoutineExport", schema: schemas.routineExport },
+    { name: "ScreenContext", schema: schemas.screenContext },
+    { name: "AiNavigationRequest", schema: schemas.aiNavigationRequest },
+    { name: "AiNavigationProposal", schema: schemas.aiNavigationProposal },
     { name: "HelloRequest", schema: withRoot(schemas.hello, schemas.hello.$defs.helloRequest) },
     { name: "HelloResult", schema: withRoot(schemas.hello, schemas.hello.$defs.helloResult) }
   ];
