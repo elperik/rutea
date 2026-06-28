@@ -40,3 +40,7 @@ Después abre `http://localhost:4321/`.
 | Acción irreversible simulada | `index.html#irreversible` |
 | CAPTCHA ficticio (debe pausar) | `index.html#captcha` |
 | Elementos ambiguos (duplicados) | `index.html#ambiguo` |
+
+## Rutina de ejemplo
+
+[`examples/ejemplo-consulta.rutea.json`](examples/ejemplo-consulta.rutea.json) es una rutina válida e importable que opera sobre este sitio (`localhost`): rellena el formulario, marca el boletín, elige país y comprueba el mensaje de éxito. Impórtala desde el panel de Rutea (sección Biblioteca → Importar) y pulsa **Ejecutar** con los fixtures servidos en `http://localhost:4321/`. No contiene datos reales.
