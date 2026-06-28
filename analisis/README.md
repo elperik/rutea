@@ -63,7 +63,13 @@ Contiene la memoria técnica de funcionalidades concluidas. El documento se muev
 6. [`pendiente/006_LIBRERIAS_Y_HERRAMIENTAS.md`](pendiente/006_LIBRERIAS_Y_HERRAMIENTAS.md): catálogo inicial y política abierta de dependencias.
 7. [`pendiente/007_ESTRATEGIA_DE_PRUEBAS.md`](pendiente/007_ESTRATEGIA_DE_PRUEBAS.md): pruebas unitarias, integración, extensión, navegador y seguridad.
 
-8. [`pendiente/020_NAVEGACION_ASISTIDA_IA.md`](pendiente/020_NAVEGACION_ASISTIDA_IA.md): instrucciones asistidas durante grabacion, contexto HTML reducido y propuestas IA validadas.
+## Trabajo activo
+
+- [`en_desarrollo/017_PLAYER_EJECUCION_SUPERVISADA.md`](en_desarrollo/017_PLAYER_EJECUCION_SUPERVISADA.md): player de ejecucion supervisada.
+- [`en_desarrollo/018_PRUEBAS_PLAYER.md`](en_desarrollo/018_PRUEBAS_PLAYER.md): pruebas del player.
+- [`en_desarrollo/019_PERSISTENCIA_RUTINAS_HOST.md`](en_desarrollo/019_PERSISTENCIA_RUTINAS_HOST.md): persistencia de rutinas en host.
+- [`en_desarrollo/020_NAVEGACION_ASISTIDA_IA.md`](en_desarrollo/020_NAVEGACION_ASISTIDA_IA.md): navegacion asistida, `ScreenContext` y propuestas IA validadas.
+- [`en_desarrollo/021_PANEL_CONTROL_CONFIGURACION_IA.md`](en_desarrollo/021_PANEL_CONTROL_CONFIGURACION_IA.md): panel local del host para configuracion IA, pruebas de modelos, metricas y mejora visual.
 
 ## Estado ya implementado
 

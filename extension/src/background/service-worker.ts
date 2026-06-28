@@ -1,10 +1,15 @@
 import {
   PROTOCOL_VERSION,
+  validateAiNavigationProposal,
+  validateAiNavigationRequest,
   validateHelloResult,
   validateNativeMessage,
   validateNativeResponse,
+  validateScreenContext,
   withinSizeLimit,
+  type AiNavigationRequest,
   type NativeMessage,
+  type ScreenContext,
   type Step
 } from "../contracts/index.js";
 import { contentScriptId, originMatchPattern } from "./origins.js";
@@ -21,6 +26,8 @@ type RuteaMessage =
   | { type: "GET_STATUS" }
   | { type: "PING_NATIVE_HOST" }
   | { type: "RUTEA_IS_RECORDING" }
+  | { type: "OBSERVE_SCREEN" }
+  | { type: "AI_NAVIGATION_PROPOSE"; request: AiNavigationRequest }
   | { type: "EXECUTE_STEP"; step: Step; value?: unknown };
 
 interface RuteaResponse {
@@ -65,6 +72,10 @@ async function handleMessage(
       return getStatus();
     case "RUTEA_IS_RECORDING":
       return { ok: true, data: { recording: await isTabRecording(sender.tab?.id) } };
+    case "OBSERVE_SCREEN":
+      return observeScreenOnActiveTab();
+    case "AI_NAVIGATION_PROPOSE":
+      return proposeAiNavigation(message.request);
     case "EXECUTE_STEP":
       return executeStepOnActiveTab(message.step, message.value);
     case "PING_NATIVE_HOST":
@@ -222,6 +233,43 @@ async function executeStepOnActiveTab(step: Step, value: unknown): Promise<Rutea
   }
 }
 
+async function observeScreenOnActiveTab(): Promise<RuteaResponse> {
+  const tab = await getActiveTab();
+  if (tab.id === undefined) {
+    return { ok: false, error: "La pestaÃ±a activa no tiene identificador" };
+  }
+
+  try {
+    await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      files: ["content/observer.js"]
+    });
+    const response = (await chrome.tabs.sendMessage(tab.id, {
+      type: "RUTEA_OBSERVE_SCREEN"
+    })) as { ok?: boolean; screenContext?: unknown; error?: string };
+
+    if (!response?.ok) {
+      return { ok: false, error: response?.error ?? "No se pudo observar la pantalla" };
+    }
+
+    const validation = validateScreenContext(response.screenContext);
+    if (!validation.ok) {
+      return {
+        ok: false,
+        error: `ScreenContext invÃ¡lido: ${describeIssues(validation.issues)}`
+      };
+    }
+
+    if (!withinSizeLimit(validation.value)) {
+      return { ok: false, error: "ScreenContext supera el tamaÃ±o permitido" };
+    }
+
+    return { ok: true, data: validation.value satisfies ScreenContext };
+  } catch (error: unknown) {
+    return { ok: false, error: toErrorMessage(error) };
+  }
+}
+
 async function getActiveTab(): Promise<chrome.tabs.Tab> {
   const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
   const tab = tabs[0];
@@ -269,13 +317,49 @@ async function negotiateWithHost(): Promise<RuteaResponse> {
   return { ok: true, data: hello.value };
 }
 
-function buildEnvelope(type: string, payload: Record<string, unknown>): NativeMessage {
+async function proposeAiNavigation(request: AiNavigationRequest): Promise<RuteaResponse> {
+  const requestValidation = validateAiNavigationRequest(request);
+  if (!requestValidation.ok) {
+    return {
+      ok: false,
+      error: `PeticiÃ³n IA saliente invÃ¡lida: ${describeIssues(requestValidation.issues)}`
+    };
+  }
+  if (!withinSizeLimit(requestValidation.value)) {
+    return { ok: false, error: "La peticiÃ³n IA supera el tamaÃ±o permitido" };
+  }
+
+  const envelope = buildEnvelope("ai.navigation.propose", requestValidation.value);
+  const outgoing = validateNativeMessage(envelope);
+  if (!outgoing.ok) {
+    return { ok: false, error: `Mensaje saliente invÃ¡lido: ${describeIssues(outgoing.issues)}` };
+  }
+
+  const raw = await sendNativeMessage(envelope);
+  const response = validateNativeResponse(raw);
+  if (!response.ok) {
+    return { ok: false, error: `Respuesta del host no vÃ¡lida: ${describeIssues(response.issues)}` };
+  }
+  if (!response.value.ok) {
+    return { ok: false, error: response.value.error?.message ?? "El host devolviÃ³ un error IA" };
+  }
+
+  const payload = isRecord(response.value.payload) ? response.value.payload : {};
+  const proposal = validateAiNavigationProposal(payload.proposal);
+  if (!proposal.ok) {
+    return { ok: false, error: `Propuesta IA invÃ¡lida: ${describeIssues(proposal.issues)}` };
+  }
+
+  return { ok: true, data: proposal.value };
+}
+
+function buildEnvelope(type: string, payload: object): NativeMessage {
   return {
     protocolVersion: PROTOCOL_VERSION,
     messageId: crypto.randomUUID(),
     type,
     timestamp: new Date().toISOString(),
-    payload,
+    payload: payload as NativeMessage["payload"],
     meta: { extensionVersion: chrome.runtime.getManifest().version }
   };
 }

@@ -5,6 +5,9 @@ export default defineConfig({
     environment: "node",
     include: ["src/**/*.test.ts"],
     // El player toca el DOM: sus pruebas usan happy-dom; el resto, Node.
-    environmentMatchGlobs: [["**/player-core.test.ts", "happy-dom"]]
+    environmentMatchGlobs: [
+      ["**/player-core.test.ts", "happy-dom"],
+      ["**/screen-context.test.ts", "happy-dom"]
+    ]
   }
 });

@@ -58,6 +58,9 @@
 
   <build>
     <resources>
+      <resource>
+        <directory>${project.basedir}/src/main/resources</directory>
+      </resource>
       <!-- Los esquemas canónicos viven en shared/; se copian al classpath del host. -->
       <resource>
         <directory>${project.basedir}/../shared</directory>

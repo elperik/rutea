@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import es.etic.rutea.controlpanel.LocalControlPanelServer;
 import es.etic.rutea.messaging.MessageCodec;
 import es.etic.rutea.messaging.MessageHandler;
 import es.etic.rutea.messaging.SchemaValidator;
@@ -39,18 +40,54 @@ public final class NativeHostMain {
     public static void main(String[] args) {
         ObjectMapper mapper = new ObjectMapper();
         try (Database database = new Database(defaultDatabaseFile())) {
+            SqliteRoutineRepository routines = new SqliteRoutineRepository(database);
+            if (hasArg(args, "--panel")) {
+                runControlPanel(mapper, routines, panelPort(args));
+                return;
+            }
             MessageHandler handler =
                     new MessageHandler(
                             mapper,
                             new SchemaValidator(),
                             Clock.systemUTC(),
-                            new SqliteRoutineRepository(database));
+                            routines);
             NativeHostMain host = new NativeHostMain(mapper, handler);
             host.run(System.in, System.out);
-        } catch (IOException | SQLException exception) {
+        } catch (IOException | SQLException | InterruptedException exception) {
             System.err.println("Rutea Native Host finalizado: " + exception.getMessage());
+            if (exception instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
             System.exit(1);
         }
+    }
+
+    private static void runControlPanel(ObjectMapper mapper, SqliteRoutineRepository routines, int port)
+            throws IOException, InterruptedException {
+        try (LocalControlPanelServer panel =
+                new LocalControlPanelServer(mapper, routines, Clock.systemUTC(), port)) {
+            panel.start();
+            System.err.println("Rutea Panel local disponible en " + panel.uri());
+            Thread.currentThread().join();
+        }
+    }
+
+    private static boolean hasArg(String[] args, String expected) {
+        for (String arg : args) {
+            if (expected.equals(arg)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static int panelPort(String[] args) {
+        for (String arg : args) {
+            if (arg.startsWith("--panel-port=")) {
+                return Integer.parseInt(arg.substring("--panel-port=".length()));
+            }
+        }
+        return LocalControlPanelServer.DEFAULT_PORT;
     }
 
     private static Path defaultDatabaseFile() {

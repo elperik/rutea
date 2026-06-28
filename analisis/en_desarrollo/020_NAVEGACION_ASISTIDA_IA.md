@@ -31,8 +31,9 @@ Rutea no desarrollará un agente navegador general, un protocolo visual propio, 
 
 Se reutilizarán, cuando aporten valor medible:
 
-- OpenAI Responses API y Computer Use;
-- SDK oficial Java de OpenAI;
+- proveedores OpenAI-compatible como GitHub Models, NVIDIA NIM u OpenRouter;
+- Google Gemini;
+- OpenAI Responses API y Computer Use solo como adaptadores opcionales;
 - Playwright Java y sus locators semánticos;
 - Stagehand como backend opcional tras benchmark;
 - LangChain4j cuando exista una necesidad real de múltiples proveedores o de orquestación adicional.
@@ -405,8 +406,10 @@ No se pide a la IA «haz todo» para ejecutar después un macroplan largo sin re
 
 | Proyecto | Uso previsto | Decisión |
 |---|---|---|
-| OpenAI Responses API | Structured Outputs, tool calling y Computer Use | Backend inicial |
-| SDK oficial Java OpenAI | Cliente de Responses API | Incorporar en slice de proveedor |
+| Proveedores OpenAI-compatible | GitHub Models, NVIDIA NIM, OpenRouter u otros endpoints compatibles | Backend real inicial según configuración local |
+| Google Gemini | Backend alternativo no OpenAI-compatible | Incorporar adaptador propio |
+| OpenAI Responses API | Structured Outputs, tool calling y Computer Use | Opcional; no proveedor inicial si no hay créditos |
+| SDK oficial Java OpenAI | Cliente de Responses API | Posponer hasta que exista configuración/crédito OpenAI |
 | Playwright Java | E2E, locators, descargas, ventanas y navegador aislado | Incorporar |
 | Stagehand | `observe`, `act`, `extract` y reparación | Benchmark; integrar si mejora la línea base |
 | LangChain4j | Multiproveedor y orquestación adicional | Posponer hasta necesidad real |
@@ -450,34 +453,41 @@ Siguientes slices:
 
 - [x] mover iniciativa a `en_desarrollo`;
 - [x] documentar modos `structured`, `computer`, `auto` y exploración aislada;
-- [ ] añadir acción `assist` al contrato de rutina;
-- [ ] definir `ScreenContext`;
-- [ ] definir request y proposal;
-- [ ] generar tipos y validadores TS;
-- [ ] cargar y validar contratos en Java;
-- [ ] añadir pruebas de contrato.
+- [x] añadir acción `assist` al contrato de rutina;
+- [x] definir `ScreenContext`;
+- [x] definir request y proposal;
+- [x] generar tipos y validadores TS;
+- [x] cargar y validar contratos en Java;
+- [x] añadir pruebas de contrato.
 
 ### Slice 020-B — Context reducer
 
-- [ ] módulo puro de reducción semántica;
-- [ ] redacción determinista;
-- [ ] fixtures GPEX anonimizados;
-- [ ] hash y truncado;
-- [ ] pruebas TS.
+- [x] módulo puro de reducción semántica;
+- [x] redacción determinista inicial;
+- [x] fixtures GPEX anonimizados;
+- [x] hash y truncado;
+- [x] pruebas TS.
+- [x] content script `observer` inyectable desde service worker;
+- [x] comando interno `OBSERVE_SCREEN` con validación `ScreenContext`.
 
 ### Slice 020-C — UI `assist`
 
-- [ ] insertar instrucción durante grabación;
-- [ ] editar estrategia y límites;
-- [ ] exportar/importar;
-- [ ] validación de UI.
+- [x] insertar instrucción durante grabación;
+- [x] editar estrategia y límites;
+- [x] exportar/importar;
+- [x] validación de UI.
 
-### Slice 020-D — Backend structured
+### Slice 020-D — Configuración IA y backend structured
 
-- [ ] interfaz `AiNavigationBackend`;
-- [ ] SDK oficial Java OpenAI;
-- [ ] `OpenAiStructuredBackend`;
-- [ ] Fake/WireMock;
+- [x] interfaz `AiNavigationBackend`;
+- [ ] configuración local multiproveedor inspirada en `track`;
+- [ ] cadena principal/fallback1/fallback2 por configuración;
+- [ ] catálogo de modelos con capacidades (`vision`, `streaming`, `structuredOutputs`, `toolCalling`) y parámetros;
+- [ ] almacenamiento seguro de claves fuera de Git y fuera de la extensión;
+- [ ] `OpenAiCompatibleBackend` para proveedores OpenAI-compatible;
+- [ ] `GeminiBackend`;
+- [ ] `OpenAiStructuredBackend` opcional;
+- [x] Fake/WireMock;
 - [ ] métricas y límites;
 - [ ] ejecución de una interacción de bajo riesgo.
 
@@ -551,14 +561,26 @@ Siguientes slices:
 - 2026-06-28: se adopta una política explícita de reutilización; Rutea no construirá un agente navegador general.
 - 2026-06-28: se definen `structured`, `computer` y `auto`; Computer Use queda como fallback visual y no como mecanismo principal.
 - 2026-06-28: se mantiene la extensión para la sesión autenticada y Playwright para navegador aislado.
-- 2026-06-28: LangChain4j se pospone; el primer backend utilizará el SDK oficial Java de OpenAI.
+- 2026-06-28: LangChain4j se pospone; el primer backend real no dependerá de OpenAI. Se adoptará un modelo multiproveedor inspirado en `track`, con proveedor principal y fallbacks configurables.
 - 2026-06-28: las propuestas se basan en `controlId`/`actionId`; los selectores y coordenadas no son autoridad del modelo.
 - 2026-06-28: se inicia el slice 020-A de contratos.
+- 2026-06-28: se implementa `extension/src/assist/screen-context.ts` como reducer semántico puro de pantalla. Extrae controles, tablas, acciones candidatas, locators, resumen textual, redacciones, truncado y `contextHash`.
+- 2026-06-28: la primera redacción cubre password, Authorization/Bearer, emails, DNI, NIF, teléfonos y tokens/API keys en texto. Es una base defensiva; antes de proveedor real se debe ampliar con fixtures GPEX adicionales.
+- 2026-06-28: el valor de `select` se expone como texto visible seleccionado, no como `value` HTML interno, porque es la señal útil para interpretación IA.
+- 2026-06-28: se añade `content/observer.ts` y el comando de extensión `OBSERVE_SCREEN`; el service worker inyecta el observador, recibe el contexto y lo valida contra contrato antes de devolverlo.
+- 2026-06-28: se añade UI mínima para pasos `assist`: inserción durante grabación, alta desde editor, edición de instrucción, estrategia, modo de observación, límites de turnos/acciones/iteraciones y condición de parada.
+- 2026-06-28: los pasos `assist` creados desde grabación usan defaults conservadores: `auto`, `semantic-first`, acciones permitidas cerradas (`click`, `fill`, `select`, `check`, `wait`, `assert`), `maxIterations=1`, `maxActions=20`, `maxModelTurns=5`, sin capturas por defecto y confirmación requerida.
+- 2026-06-28: `updateStep` elimina campos opcionales que se limpian en el editor para evitar que queden propiedades `undefined` presentes antes de validar/exportar.
+- 2026-06-28: el host Java carga y valida `ScreenContext`, `AiNavigationRequest` y `AiNavigationProposal`. Para evitar resolución remota de `$ref`, el validador compone internamente el schema de request con el schema empaquetado de pantalla.
+- 2026-06-28: se crea `AiNavigationBackend` y `FakeNavigationBackend` offline. El fake solo propone acciones semánticas existentes en `ScreenContext` y valida por contrato; no llama a proveedor ni ejecuta acciones.
+- 2026-06-28: se añade el mensaje Native Messaging `ai.navigation.propose`; el host valida request/proposal y la extensión dispone de comando interno `AI_NAVIGATION_PROPOSE` para enviar peticiones validadas al host.
+- 2026-06-28: `hello` del host declara la capacidad `ai.navigation.propose`.
+- 2026-06-28: se revisa `C:\proyectos\track` y se adopta como referencia de configuración IA: catálogo local de proveedores/modelos, selección principal y fallbacks, flags por modelo (`vision`, `streaming`, parámetros), logging de payload/tokens/duración/HTTP y limpieza agresiva de HTML. Rutea no copiará claves ni secretos de `track`; solo reutilizará el patrón arquitectónico.
 
 ## 24. Resultado implementado
 
 En desarrollo.
 
 Commit/PR: rama `feat/020-navegacion-asistida-ia`
-Verificación: pendiente de CI y pruebas locales completas.
-Riesgo residual: contratos aún no conectados al player, UI ni proveedor real.
+Verificación local 2026-06-28: `npm --prefix extension run lint`; `npm --prefix extension run typecheck`; `npm --prefix extension test` (107 tests); `npm --prefix extension run build`; `mvn -f native-host/pom.xml -B test package` con JDK 21; `native-host/scripts/smoke-roundtrip.ps1` con `hello`, rutinas y `ai.navigation.propose`.
+Riesgo residual: `assist` ya tiene contrato, UI, observación y endpoint host fake, pero aún no ejecuta el ciclo completo observar/proponer/validar/ejecutar en el player, no tiene proveedor OpenAI real ni métricas de coste/tokens.
