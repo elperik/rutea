@@ -63,6 +63,8 @@ Contiene la memoria técnica de funcionalidades concluidas. El documento se muev
 6. [`pendiente/006_LIBRERIAS_Y_HERRAMIENTAS.md`](pendiente/006_LIBRERIAS_Y_HERRAMIENTAS.md): catálogo inicial y política abierta de dependencias.
 7. [`pendiente/007_ESTRATEGIA_DE_PRUEBAS.md`](pendiente/007_ESTRATEGIA_DE_PRUEBAS.md): pruebas unitarias, integración, extensión, navegador y seguridad.
 
+8. [`pendiente/020_NAVEGACION_ASISTIDA_IA.md`](pendiente/020_NAVEGACION_ASISTIDA_IA.md): instrucciones asistidas durante grabacion, contexto HTML reducido y propuestas IA validadas.
+
 ## Estado ya implementado
 
 - [`implementado/000_ANDAMIAJE_INICIAL.md`](implementado/000_ANDAMIAJE_INICIAL.md): andamiaje inicial del proyecto.
