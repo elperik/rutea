@@ -33,14 +33,17 @@ interface CommandResponse {
 }
 
 const STORAGE_KEY = "rutea.recordedSteps";
+const CONTROL_PANEL_URL = "http://127.0.0.1:8765/";
 
 const startButton = getButton("start");
 const stopButton = getButton("stop");
 const clearButton = getButton("clear");
 const pingHostButton = getButton("ping-host");
+const openControlPanelButton = getButton("open-control-panel");
 const statusElement = getElement("status");
 const stepsElement = getElement("steps");
 const stepCountElement = getElement("step-count");
+const addAssistRecordingButton = getButton("add-assist-recording");
 const saveRoutineButton = getButton("save-routine");
 const importInput = getInput("import-routine");
 const routinesElement = getElement("routines");
@@ -49,10 +52,25 @@ const editorSection = getElement("editor");
 const editorName = getInput("editor-name");
 const editorSteps = getElement("editor-steps");
 const editorVariables = getElement("editor-variables");
+const editorAddAssistButton = getButton("editor-add-assist");
 const editorSaveButton = getButton("editor-save");
 const editorCloseButton = getButton("editor-close");
 
 const RISKS: Step["risk"][] = ["low", "medium", "high", "irreversible"];
+const ASSIST_STRATEGIES: NonNullable<Step["strategy"]>[] = ["auto", "structured", "computer"];
+const OBSERVATION_MODES: NonNullable<Step["observationMode"]>[] = [
+  "semantic-first",
+  "semantic",
+  "visual"
+];
+const DEFAULT_ASSIST_ALLOWED_ACTIONS: NonNullable<Step["allowedActions"]> = [
+  "click",
+  "fill",
+  "select",
+  "check",
+  "wait",
+  "assert"
+];
 
 // Borrador de la rutina en edición; null si el editor está cerrado.
 let draft: Routine | null = null;
@@ -61,10 +79,12 @@ let draft: Routine | null = null;
 // permiso por sitio durante el gesto de clic sin perderlo en un await previo.
 let activeOrigin: string | null = null;
 let activeHostname: string | null = null;
+let activeUrl: string | null = null;
 
 startButton.addEventListener("click", () => void startRecording());
 stopButton.addEventListener("click", () => runCommand("STOP_RECORDING", "Grabación detenida"));
 clearButton.addEventListener("click", () => runCommand("CLEAR_RECORDING", "Pasos eliminados"));
+addAssistRecordingButton.addEventListener("click", () => void addAssistToRecording());
 saveRoutineButton.addEventListener("click", () => void saveCurrentRecording());
 importInput.addEventListener("change", (event) => void importFromFile(event));
 editorName.addEventListener("input", () => {
@@ -72,11 +92,15 @@ editorName.addEventListener("input", () => {
     draft = renameRoutine(draft, editorName.value);
   }
 });
+editorAddAssistButton.addEventListener("click", () => addAssistToDraft());
 editorSaveButton.addEventListener("click", () => void saveDraft());
 editorCloseButton.addEventListener("click", closeEditor);
 pingHostButton.addEventListener("click", () =>
   runCommand("PING_NATIVE_HOST", "Host Java conectado")
 );
+openControlPanelButton.addEventListener("click", () => {
+  void chrome.tabs.create({ url: CONTROL_PANEL_URL });
+});
 
 chrome.storage.onChanged.addListener((changes, areaName) => {
   const change = changes[STORAGE_KEY];
@@ -124,13 +148,16 @@ async function refreshActiveOrigin(): Promise<void> {
       const parsed = new URL(url);
       activeOrigin = `${parsed.origin}/*`;
       activeHostname = parsed.hostname;
+      activeUrl = url;
     } else {
       activeOrigin = null;
       activeHostname = null;
+      activeUrl = null;
     }
   } catch {
     activeOrigin = null;
     activeHostname = null;
+    activeUrl = null;
   }
 }
 
@@ -182,6 +209,33 @@ function renderSteps(value: unknown): void {
 function setStatus(message: string, isError = false): void {
   statusElement.textContent = message;
   statusElement.setAttribute("aria-label", isError ? `Error: ${message}` : message);
+}
+
+async function addAssistToRecording(): Promise<void> {
+  if (!activeUrl) {
+    setStatus("Abre primero una pagina http/https para insertar una instruccion IA", true);
+    return;
+  }
+
+  const instruction = window.prompt("Instruccion para la IA");
+  if (instruction === null) {
+    return;
+  }
+
+  const step = createAssistRecordedStep(instruction, activeUrl);
+  const issue = validateAssistInstruction(step);
+  if (issue) {
+    setStatus(issue, true);
+    return;
+  }
+
+  const stored = await chrome.storage.local.get(STORAGE_KEY);
+  const steps = Array.isArray(stored[STORAGE_KEY])
+    ? (stored[STORAGE_KEY] as RecordedStepInput[])
+    : [];
+  await chrome.storage.local.set({ [STORAGE_KEY]: [...steps, step] });
+  setStatus("Instruccion IA anadida a la grabacion");
+  await refreshSteps();
 }
 
 // Convierte la grabación actual en una rutina validada y la guarda.
@@ -402,6 +456,10 @@ function renderDraftStep(step: Step, index: number): HTMLLIElement {
 
   item.append(heading, controls, order);
 
+  if (step.action === "assist") {
+    item.append(assistControls(step, index));
+  }
+
   if (step.value !== undefined && step.value !== null && !isReference(step.value)) {
     const convert = orderButton("→ Variable", () => convertStepToVariable(index));
     convert.classList.remove("secondary");
@@ -514,6 +572,64 @@ function timeoutControl(step: Step, index: number): HTMLLabelElement {
   return label;
 }
 
+function assistControls(step: Step, index: number): HTMLDivElement {
+  const container = document.createElement("div");
+  container.className = "assist-editor";
+
+  const instructionLabel = document.createElement("label");
+  instructionLabel.className = "field";
+  instructionLabel.textContent = "Instruccion IA";
+  const textarea = document.createElement("textarea");
+  textarea.value = step.instruction ?? "";
+  textarea.maxLength = 8000;
+  textarea.addEventListener("change", () => {
+    applyEdit(updateStep(draft!, index, { instruction: textarea.value.trim() }));
+  });
+  instructionLabel.append(textarea);
+
+  const controls = document.createElement("div");
+  controls.className = "editor-step-controls";
+  controls.append(
+    enumControl("Estrategia", step.strategy ?? "auto", ASSIST_STRATEGIES, (value) => {
+      applyEdit(updateStep(draft!, index, { strategy: value }));
+    }),
+    enumControl(
+      "Observacion",
+      step.observationMode ?? "semantic-first",
+      OBSERVATION_MODES,
+      (value) => {
+        applyEdit(updateStep(draft!, index, { observationMode: value }));
+      }
+    ),
+    numberControl("Iteraciones", step.maxIterations ?? 1, 1, 100, (value) => {
+      applyEdit(updateStep(draft!, index, { maxIterations: value }));
+    }),
+    numberControl("Acciones", step.maxActions ?? 20, 1, 200, (value) => {
+      applyEdit(updateStep(draft!, index, { maxActions: value }));
+    }),
+    numberControl("Turnos IA", step.maxModelTurns ?? 5, 1, 50, (value) => {
+      applyEdit(updateStep(draft!, index, { maxModelTurns: value }));
+    })
+  );
+
+  const stopLabel = document.createElement("label");
+  stopLabel.className = "field";
+  stopLabel.textContent = "Condicion de parada";
+  const stopInput = document.createElement("input");
+  stopInput.type = "text";
+  stopInput.maxLength = 1000;
+  stopInput.placeholder = "Obligatoria si iteraciones > 1";
+  stopInput.value = step.stopCondition ?? "";
+  stopInput.addEventListener("change", () => {
+    const value = stopInput.value.trim();
+    applyEdit(updateStep(draft!, index, { stopCondition: value === "" ? undefined : value }));
+  });
+  stopLabel.append(stopInput);
+
+  container.append(instructionLabel, controls, stopLabel);
+  return container;
+}
+
 function orderButton(text: string, onClick: () => void): HTMLButtonElement {
   const button = document.createElement("button");
   button.type = "button";
@@ -537,8 +653,34 @@ function applyEdit(next: Routine): void {
   renderDraft();
 }
 
+function addAssistToDraft(): void {
+  if (!draft) {
+    return;
+  }
+
+  const instruction = window.prompt("Instruccion para la IA");
+  if (instruction === null) {
+    return;
+  }
+
+  const step = createAssistStep(instruction);
+  const issue = validateAssistInstruction(step);
+  if (issue) {
+    setStatus(issue, true);
+    return;
+  }
+
+  applyEdit({ ...draft, steps: [...draft.steps, step] });
+}
+
 function targetSummary(step: Step): string {
-  return step.target?.selectors?.[0] ?? step.target?.accessibleName ?? step.target?.label ?? "—";
+  return (
+    step.instruction ??
+    step.target?.selectors?.[0] ??
+    step.target?.accessibleName ??
+    step.target?.label ??
+    "-"
+  );
 }
 
 async function saveDraft(): Promise<void> {
@@ -602,6 +744,100 @@ async function importFromFile(event: Event): Promise<void> {
       : "Rutina importada (sin verificar)"
   );
   await refreshRoutines();
+}
+
+function createAssistRecordedStep(instruction: string, url: string): RecordedStepInput {
+  const step = createAssistStep(instruction);
+  return {
+    id: step.id,
+    action: "assist",
+    url,
+    strategy: step.strategy,
+    observationMode: step.observationMode,
+    instruction: step.instruction,
+    allowedActions: step.allowedActions,
+    maxModelTurns: step.maxModelTurns,
+    maxActions: step.maxActions,
+    maxIterations: step.maxIterations,
+    maxInputBytes: step.maxInputBytes,
+    maxScreenshotCount: step.maxScreenshotCount,
+    maxDurationMs: step.maxDurationMs
+  };
+}
+
+function createAssistStep(instruction: string): Step {
+  return {
+    id: crypto.randomUUID(),
+    action: "assist",
+    strategy: "auto",
+    observationMode: "semantic-first",
+    instruction: instruction.trim(),
+    allowedActions: [...DEFAULT_ASSIST_ALLOWED_ACTIONS],
+    maxModelTurns: 5,
+    maxActions: 20,
+    maxIterations: 1,
+    maxInputBytes: 65_536,
+    maxScreenshotCount: 0,
+    maxDurationMs: 60_000,
+    risk: "medium",
+    confirmationRequired: true
+  };
+}
+
+function validateAssistInstruction(step: Pick<Step, "instruction">): string | undefined {
+  const instruction = step.instruction?.trim() ?? "";
+  if (instruction.length === 0) {
+    return "La instruccion IA no puede estar vacia";
+  }
+  if (instruction.length > 8000) {
+    return "La instruccion IA supera el limite de 8000 caracteres";
+  }
+  return undefined;
+}
+
+function enumControl<T extends string>(
+  text: string,
+  value: T,
+  values: readonly T[],
+  onChange: (value: T) => void
+): HTMLLabelElement {
+  const label = document.createElement("label");
+  label.textContent = `${text} `;
+  const select = document.createElement("select");
+  for (const optionValue of values) {
+    const option = document.createElement("option");
+    option.value = optionValue;
+    option.textContent = optionValue;
+    option.selected = optionValue === value;
+    select.append(option);
+  }
+  select.addEventListener("change", () => onChange(select.value as T));
+  label.append(select);
+  return label;
+}
+
+function numberControl(
+  text: string,
+  value: number,
+  min: number,
+  max: number,
+  onChange: (value: number) => void
+): HTMLLabelElement {
+  const label = document.createElement("label");
+  label.textContent = `${text} `;
+  const input = document.createElement("input");
+  input.type = "number";
+  input.min = String(min);
+  input.max = String(max);
+  input.value = String(value);
+  input.addEventListener("change", () => {
+    const parsed = Number(input.value);
+    const next = Number.isFinite(parsed) ? Math.min(max, Math.max(min, parsed)) : min;
+    input.value = String(next);
+    onChange(next);
+  });
+  label.append(input);
+  return label;
 }
 
 function sanitizeFileName(name: string): string {

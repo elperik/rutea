@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rutea Panel</title>
+    <link rel="stylesheet" href="/assets/panel.css" />
+  </head>
+  <body>
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="brand-mark">R</span>
+        <div>
+          <p>Rutea</p>
+          <span>Panel local</span>
+        </div>
+      </div>
+      <nav>
+        <a href="#overview" class="active">Inicio</a>
+        <a href="#ai">IA</a>
+        <a href="#routines">Rutinas</a>
+        <a href="#security">Seguridad</a>
+      </nav>
+    </aside>
+
+    <main>
+      <section id="overview" class="hero">
+        <div>
+          <p class="eyebrow">Control local</p>
+          <h1>Configuracion y diagnostico de Rutea</h1>
+          <p class="subtitle">
+            Proveedores IA, rutinas, metricas y estado del host sin exponer secretos a la extension.
+          </p>
+        </div>
+        <div class="status-card">
+          <span id="health-state" class="status-pill">Comprobando</span>
+          <strong id="service-name">Host Java</strong>
+          <small id="health-detail">127.0.0.1</small>
+        </div>
+      </section>
+
+      <section class="metrics-grid" aria-label="Resumen">
+        <article>
+          <span>Rutinas</span>
+          <strong id="routine-count">0</strong>
+        </article>
+        <article>
+          <span>Proveedor principal</span>
+          <strong id="main-provider">-</strong>
+        </article>
+        <article>
+          <span>Secretos en extension</span>
+          <strong id="secrets-extension">No</strong>
+        </article>
+      </section>
+
+      <section id="ai" class="panel">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">IA</p>
+            <h2>Proveedores y prueba</h2>
+          </div>
+          <button id="refresh" type="button">Actualizar</button>
+        </div>
+
+        <p id="config-status" class="config-status"></p>
+
+        <form id="selection-form" class="selection-form">
+          <h3>Seleccion activa</h3>
+          <div class="selection-row">
+            <span>Principal</span>
+            <select id="sel-main-provider"></select>
+            <select id="sel-main-model"></select>
+          </div>
+          <div class="selection-row">
+            <span>Fallback 1</span>
+            <select id="sel-fb1-provider"></select>
+            <select id="sel-fb1-model"></select>
+          </div>
+          <div class="selection-row">
+            <span>Fallback 2</span>
+            <select id="sel-fb2-provider"></select>
+            <select id="sel-fb2-model"></select>
+          </div>
+          <div class="selection-actions">
+            <button type="submit">Guardar seleccion</button>
+            <span id="selection-result"></span>
+          </div>
+        </form>
+
+        <div id="providers" class="provider-grid"></div>
+
+        <form id="ai-test" class="test-form">
+          <label>
+            Proveedor
+            <select id="provider"></select>
+          </label>
+          <label>
+            Modelo
+            <select id="model"></select>
+          </label>
+          <label class="prompt-field">
+            Prompt de prueba
+            <textarea id="prompt" rows="4">Responde solo OK y el nombre del modelo.</textarea>
+          </label>
+          <button type="submit">Probar modelo</button>
+        </form>
+
+        <pre id="test-result" class="result">Sin prueba ejecutada.</pre>
+      </section>
+
+      <section id="routines" class="panel">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">Biblioteca</p>
+            <h2>Rutinas locales</h2>
+          </div>
+        </div>
+        <div id="routine-list" class="routine-list"></div>
+      </section>
+
+      <section id="security" class="panel">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">Seguridad</p>
+            <h2>Politica activa</h2>
+          </div>
+        </div>
+        <ul class="security-list">
+          <li>Panel servido solo en loopback: <strong>127.0.0.1</strong></li>
+          <li>Claves IA reservadas al host Java.</li>
+          <li>La extension no recibe secretos ni tokens.</li>
+          <li>Las acciones IA siguen pasando por contratos y Policy Gate.</li>
+        </ul>
+      </section>
+    </main>
+
+    <script type="module" src="/assets/panel.js"></script>
+  </body>
+</html>

@@ -1,5 +1,19 @@
 :root {
   color-scheme: light dark;
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --surface-muted: #eef1f5;
+  --line: #d8dde6;
+  --text: #18202c;
+  --muted: #657084;
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --secondary: #475569;
+  --secondary-hover: #334155;
+  --danger: #c24135;
+  --danger-hover: #a7352b;
+  --success: #0f766e;
+  --shadow: 0 10px 28px rgb(18 32 52 / 10%);
   font-family:
     Inter,
     ui-sans-serif,
@@ -8,8 +22,27 @@
     BlinkMacSystemFont,
     "Segoe UI",
     sans-serif;
-  background: Canvas;
-  color: CanvasText;
+  background: var(--bg);
+  color: var(--text);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #111827;
+    --surface: #182131;
+    --surface-muted: #202b3b;
+    --line: #304056;
+    --text: #edf2f7;
+    --muted: #a8b3c5;
+    --primary: #3b82f6;
+    --primary-hover: #60a5fa;
+    --secondary: #64748b;
+    --secondary-hover: #7b8ba0;
+    --danger: #dc5a4f;
+    --danger-hover: #ef7469;
+    --success: #2dd4bf;
+    --shadow: 0 10px 28px rgb(0 0 0 / 24%);
+  }
 }
 
 * {
@@ -17,16 +50,20 @@
 }
 
 body {
+  min-width: 330px;
   margin: 0;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--primary) 10%, transparent), transparent 170px),
+    var(--bg);
 }
 
 main {
   display: grid;
-  gap: 16px;
-  padding: 16px;
+  gap: 12px;
+  padding: 14px;
 }
 
-header,
+.app-header,
 .section-heading {
   display: flex;
   align-items: center;
@@ -34,92 +71,120 @@ header,
   gap: 12px;
 }
 
+.app-header {
+  min-height: 74px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
 h1,
 h2,
+h3,
 p {
   margin: 0;
 }
 
 h1 {
-  font-size: 1.4rem;
+  font-size: 1.45rem;
+  line-height: 1.1;
 }
 
 h2 {
   margin-bottom: 10px;
-  font-size: 1rem;
+  font-size: 0.95rem;
+  line-height: 1.2;
 }
 
 .eyebrow {
-  margin-bottom: 4px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  margin-bottom: 5px;
+  color: var(--success);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  opacity: 0.7;
 }
 
 section {
-  padding: 14px;
-  border: 1px solid color-mix(in srgb, CanvasText 18%, transparent);
-  border-radius: 12px;
-  background: color-mix(in srgb, Canvas 94%, CanvasText 6%);
+  padding: 13px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
 }
 
 .actions {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
   gap: 8px;
 }
 
-button {
-  min-height: 38px;
-  padding: 8px 12px;
-  border: 0;
-  border-radius: 8px;
-  background: #1267d6;
-  color: white;
-  font: inherit;
-  font-weight: 650;
-  cursor: pointer;
-}
-
-button:hover {
-  filter: brightness(1.08);
-}
-
-button:focus-visible {
-  outline: 3px solid Highlight;
-  outline-offset: 2px;
-}
-
-button.secondary {
-  background: #4b5563;
-}
-
-button.danger {
-  background: #b42318;
-}
-
-#status,
-#step-count,
-#routine-count {
-  padding: 4px 8px;
-  border-radius: 999px;
-  background: color-mix(in srgb, CanvasText 12%, transparent);
-  font-size: 0.78rem;
-}
-
+button,
 .import-label {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   min-height: 38px;
   padding: 8px 12px;
-  border-radius: 8px;
-  background: #4b5563;
-  color: white;
-  font-weight: 650;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: var(--primary);
+  color: #ffffff;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
   cursor: pointer;
+}
+
+button:hover,
+.import-label:hover {
+  background: var(--primary-hover);
+}
+
+button:focus-visible,
+.import-label:focus-within {
+  outline: 3px solid color-mix(in srgb, var(--primary) 35%, transparent);
+  outline-offset: 2px;
+}
+
+button.secondary,
+.import-label {
+  background: var(--secondary);
+}
+
+button.secondary:hover,
+.import-label:hover {
+  background: var(--secondary-hover);
+}
+
+button.danger {
+  background: var(--danger);
+}
+
+button.danger:hover {
+  background: var(--danger-hover);
+}
+
+#status,
+#step-count,
+#routine-count {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  max-width: 48%;
+  padding: 4px 9px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--success) 35%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--success) 12%, var(--surface));
+  color: var(--text);
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 #routines {
@@ -132,104 +197,129 @@ button.danger {
 
 #routines li {
   display: grid;
-  grid-template-columns: 1fr auto auto;
-  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) repeat(4, auto);
+  gap: 6px;
   align-items: center;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-muted);
 }
 
 #routines li span {
-  font-size: 0.85rem;
   overflow: hidden;
+  font-size: 0.82rem;
+  font-weight: 650;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-#routines li {
-  grid-template-columns: 1fr auto auto auto auto;
-}
-
 #routines li button {
-  min-height: 32px;
-  padding: 4px 10px;
-  font-size: 0.8rem;
+  min-height: 30px;
+  padding: 4px 8px;
+  font-size: 0.76rem;
 }
 
 .field {
   display: grid;
-  gap: 4px;
+  gap: 5px;
   margin-bottom: 12px;
-  font-size: 0.85rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 650;
 }
 
-.field input {
+.field input,
+.field textarea,
+.editor-step-controls select,
+.editor-step-controls input[type="number"],
+.editor-variable input[type="text"] {
   min-height: 36px;
-  padding: 6px 10px;
-  border: 1px solid color-mix(in srgb, CanvasText 25%, transparent);
-  border-radius: 8px;
-  background: Canvas;
-  color: CanvasText;
+  padding: 6px 9px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--text);
   font: inherit;
+}
+
+.field textarea {
+  min-height: 88px;
+  resize: vertical;
 }
 
 #editor-steps {
   display: grid;
   gap: 10px;
   margin: 0 0 12px;
-  padding-left: 1.2rem;
+  padding-left: 1.15rem;
+}
+
+#editor-add-assist {
+  margin-bottom: 12px;
 }
 
 .editor-step {
   display: grid;
-  gap: 8px;
+  gap: 9px;
   padding: 10px;
-  border: 1px solid color-mix(in srgb, CanvasText 15%, transparent);
-  border-radius: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-muted);
+}
+
+.assist-editor {
+  display: grid;
+  gap: 8px;
 }
 
 .editor-step-heading {
+  color: var(--text);
   font-size: 0.82rem;
-  font-weight: 650;
+  font-weight: 750;
+  line-height: 1.35;
   word-break: break-word;
 }
 
 .editor-step-controls {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
   align-items: center;
-  font-size: 0.8rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 650;
 }
 
 .editor-step-controls select,
 .editor-step-controls input[type="number"] {
-  min-height: 32px;
+  min-height: 31px;
   margin-left: 4px;
   padding: 2px 6px;
-  border: 1px solid color-mix(in srgb, CanvasText 25%, transparent);
-  border-radius: 6px;
-  background: Canvas;
-  color: CanvasText;
-  font: inherit;
 }
 
 .editor-step-controls input[type="number"] {
-  width: 6rem;
+  width: 5.8rem;
 }
 
 .editor-step-order {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
 }
 
 .editor-step-order button {
   min-height: 30px;
-  padding: 2px 10px;
-  font-size: 0.8rem;
+  padding: 2px 9px;
+  font-size: 0.78rem;
 }
 
 .editor-subtitle {
   margin: 4px 0 8px;
-  font-size: 0.9rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-transform: uppercase;
 }
 
 #editor-variables {
@@ -242,44 +332,46 @@ button.danger {
 
 .editor-variable {
   display: grid;
-  grid-template-columns: 1fr auto auto auto;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
   gap: 8px;
   align-items: center;
-  font-size: 0.8rem;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-muted);
+  font-size: 0.78rem;
 }
 
 .editor-variable-name {
   overflow: hidden;
+  font-weight: 750;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-weight: 650;
 }
 
 .editor-variable input[type="text"] {
   min-height: 30px;
-  width: 9rem;
+  width: 8.5rem;
   padding: 2px 6px;
-  border: 1px solid color-mix(in srgb, CanvasText 25%, transparent);
-  border-radius: 6px;
-  background: Canvas;
-  color: CanvasText;
-  font: inherit;
 }
 
 .editor-variable button {
   min-height: 28px;
   padding: 2px 8px;
-  font-size: 0.78rem;
+  font-size: 0.76rem;
 }
 
 pre {
-  max-height: 45vh;
+  max-height: 42vh;
   margin: 0;
   padding: 12px;
   overflow: auto;
+  border: 1px solid var(--line);
   border-radius: 8px;
-  background: color-mix(in srgb, CanvasText 8%, Canvas);
-  font-size: 0.75rem;
+  background: #101826;
+  color: #dbeafe;
+  font-size: 0.74rem;
+  line-height: 1.45;
   white-space: pre-wrap;
   word-break: break-word;
 }

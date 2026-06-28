@@ -86,4 +86,31 @@ describe("updateStep", () => {
     const cleared = updateStep(withTimeout, 0, { timeoutMs: undefined });
     expect("timeoutMs" in cleared.steps[0]!).toBe(false);
   });
+
+  it("edita campos assist y elimina opcionales vaciados", () => {
+    const base = updateStep(routine(), 0, {
+      action: "assist",
+      strategy: "auto",
+      observationMode: "semantic-first",
+      instruction: "Buscar pendientes",
+      allowedActions: ["click", "assert"],
+      maxModelTurns: 5,
+      maxActions: 20,
+      maxIterations: 2,
+      maxInputBytes: 65_536,
+      maxScreenshotCount: 0,
+      maxDurationMs: 60_000,
+      stopCondition: "No quedan pendientes"
+    });
+
+    const edited = updateStep(base, 0, {
+      instruction: "Firmar pendientes",
+      maxIterations: 1,
+      stopCondition: undefined
+    });
+
+    expect(edited.steps[0]?.instruction).toBe("Firmar pendientes");
+    expect(edited.steps[0]?.maxIterations).toBe(1);
+    expect("stopCondition" in edited.steps[0]!).toBe(false);
+  });
 });

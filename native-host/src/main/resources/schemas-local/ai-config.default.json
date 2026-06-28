@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 1,
+  "providers": [
+    {
+      "id": "fake",
+      "name": "Fake local",
+      "kind": "fake",
+      "models": [
+        {
+          "id": "fake-structured",
+          "name": "Fake Structured",
+          "vision": false,
+          "streaming": false,
+          "structuredOutputs": true,
+          "toolCalling": false,
+          "notes": "Backend offline para pruebas de contrato sin secretos"
+        }
+      ]
+    },
+    {
+      "id": "github",
+      "name": "GitHub Models",
+      "kind": "openai-compatible",
+      "apiBaseUrl": "https://models.inference.ai.azure.com/chat/completions",
+      "models": [
+        {
+          "id": "gpt-4o-mini",
+          "name": "GPT-4o Mini",
+          "vision": true,
+          "streaming": false,
+          "structuredOutputs": true,
+          "toolCalling": true,
+          "notes": "Rapido y economico",
+          "params": { "temperature": 0.3, "top_p": 0.95, "max_tokens": 4096 }
+        },
+        {
+          "id": "gpt-4.1",
+          "name": "GPT-4.1",
+          "vision": true,
+          "streaming": false,
+          "structuredOutputs": true,
+          "toolCalling": true,
+          "notes": "1M de contexto",
+          "params": { "temperature": 0.3, "top_p": 0.95, "max_tokens": 8192 }
+        }
+      ]
+    },
+    {
+      "id": "nvidia",
+      "name": "NVIDIA NIM",
+      "kind": "openai-compatible",
+      "apiBaseUrl": "https://integrate.api.nvidia.com/v1/chat/completions",
+      "models": [
+        {
+          "id": "nvidia/llama-3.3-nemotron-super-49b-v1",
+          "name": "Llama 3.3 Nemotron 49B",
+          "vision": false,
+          "streaming": false,
+          "structuredOutputs": false,
+          "toolCalling": true,
+          "notes": "Optimizado por NVIDIA para instrucciones",
+          "params": { "temperature": 0.6, "top_p": 0.95, "max_tokens": 4096 }
+        }
+      ]
+    },
+    {
+      "id": "openrouter",
+      "name": "OpenRouter",
+      "kind": "openai-compatible",
+      "apiBaseUrl": "https://openrouter.ai/api/v1/chat/completions",
+      "models": [
+        {
+          "id": "openrouter/free",
+          "name": "Free Models Router",
+          "vision": true,
+          "streaming": false,
+          "structuredOutputs": true,
+          "toolCalling": true,
+          "notes": "Enruta a modelos gratuitos",
+          "params": { "temperature": 0.7, "top_p": 0.95, "max_tokens": 8192 }
+        }
+      ]
+    },
+    {
+      "id": "gemini",
+      "name": "Google Gemini",
+      "kind": "gemini",
+      "apiBaseUrl": "https://generativelanguage.googleapis.com/v1beta/models/",
+      "models": [
+        {
+          "id": "gemini-2.5-flash",
+          "name": "Gemini 2.5 Flash",
+          "vision": true,
+          "streaming": false,
+          "structuredOutputs": true,
+          "toolCalling": true,
+          "notes": "Rapido, economico, 1M tokens de contexto",
+          "params": { "temperature": 0.3, "topP": 0.95, "maxOutputTokens": 8192 }
+        },
+        {
+          "id": "gemini-2.5-pro",
+          "name": "Gemini 2.5 Pro",
+          "vision": true,
+          "streaming": false,
+          "structuredOutputs": true,
+          "toolCalling": true,
+          "notes": "Mayor razonamiento",
+          "params": { "temperature": 0.3, "topP": 0.95, "maxOutputTokens": 8192 }
+        }
+      ]
+    }
+  ],
+  "selection": {
+    "main": { "provider": "fake", "model": "fake-structured" },
+    "fallback1": { "provider": "github", "model": "gpt-4o-mini" },
+    "fallback2": { "provider": "gemini", "model": "gemini-2.5-flash" }
+  }
+}

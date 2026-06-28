@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import es.etic.rutea.ai.AiNavigationBackend;
+import es.etic.rutea.ai.FakeNavigationBackend;
 import es.etic.rutea.persistence.PersistenceException;
 import es.etic.rutea.persistence.RoutineRepository;
 import es.etic.rutea.persistence.RoutineSummary;
@@ -28,13 +30,24 @@ public final class MessageHandler {
     private final SchemaValidator validator;
     private final Clock clock;
     private final RoutineRepository routines;
+    private final AiNavigationBackend aiNavigationBackend;
 
     public MessageHandler(
             ObjectMapper mapper, SchemaValidator validator, Clock clock, RoutineRepository routines) {
+        this(mapper, validator, clock, routines, new FakeNavigationBackend(mapper));
+    }
+
+    public MessageHandler(
+            ObjectMapper mapper,
+            SchemaValidator validator,
+            Clock clock,
+            RoutineRepository routines,
+            AiNavigationBackend aiNavigationBackend) {
         this.mapper = mapper;
         this.validator = validator;
         this.clock = clock;
         this.routines = routines;
+        this.aiNavigationBackend = aiNavigationBackend;
     }
 
     public JsonNode handle(JsonNode request) {
@@ -53,12 +66,31 @@ public final class MessageHandler {
                 case "routine.list" -> handleRoutineList(correlationId);
                 case "routine.get" -> handleRoutineGet(request, correlationId);
                 case "routine.delete" -> handleRoutineDelete(request, correlationId);
+                case "ai.navigation.propose" -> handleAiNavigationPropose(request, correlationId);
                 default ->
                         error(correlationId, "VALIDATION_ERROR", "Tipo de mensaje no soportado: " + type);
             };
         } catch (PersistenceException exception) {
             return error(correlationId, "PERSISTENCE_ERROR", "Error de persistencia");
         }
+    }
+
+    private JsonNode handleAiNavigationPropose(JsonNode request, String correlationId) {
+        JsonNode payload = request.path("payload");
+        List<String> requestErrors = validator.validateAiNavigationRequest(payload);
+        if (!requestErrors.isEmpty()) {
+            return error(correlationId, "VALIDATION_ERROR", "PeticiÃ³n IA invÃ¡lida: " + join(requestErrors));
+        }
+
+        JsonNode proposal = aiNavigationBackend.propose(payload);
+        List<String> proposalErrors = validator.validateAiNavigationProposal(proposal);
+        if (!proposalErrors.isEmpty()) {
+            return error(correlationId, "INTERNAL_ERROR", "Propuesta IA invÃ¡lida: " + join(proposalErrors));
+        }
+
+        ObjectNode result = mapper.createObjectNode();
+        result.set("proposal", proposal);
+        return success(correlationId, result);
     }
 
     private JsonNode handleRoutineSave(JsonNode request, String correlationId) {
@@ -148,7 +180,12 @@ public final class MessageHandler {
         result.put("protocolVersion", PROTOCOL_VERSION);
         ArrayNode supportedVersions = result.putArray("supportedProtocolVersions");
         supportedVersions.add(PROTOCOL_VERSION);
-        result.putArray("capabilities");
+        ArrayNode capabilities = result.putArray("capabilities");
+        capabilities.add("routine.save");
+        capabilities.add("routine.list");
+        capabilities.add("routine.get");
+        capabilities.add("routine.delete");
+        capabilities.add("ai.navigation.propose");
         result.put("service", SERVICE);
 
         return success(correlationId, result);

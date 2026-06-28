@@ -19,10 +19,23 @@ export interface RecordedTargetInput {
 
 export interface RecordedStepInput {
   id: string;
-  action: "click" | "fill" | "select" | "check";
+  action: "click" | "fill" | "select" | "check" | "assist";
   url: string;
   target?: RecordedTargetInput;
   value?: string | boolean | null;
+  strategy?: Step["strategy"];
+  observationMode?: Step["observationMode"];
+  instruction?: string;
+  allowedActions?: Step["allowedActions"];
+  maxModelTurns?: number;
+  maxActions?: number;
+  maxIterations?: number;
+  maxInputBytes?: number;
+  maxScreenshotCount?: number;
+  maxDurationMs?: number;
+  maxEstimatedCostUsd?: number;
+  stopCondition?: string;
+  sensitiveActions?: string[];
 }
 
 export interface BuildOptions {
@@ -91,9 +104,38 @@ function toStep(step: RecordedStepInput): Step {
   const result: Step = {
     id: step.id,
     action: step.action,
-    risk: "low",
-    confirmationRequired: false
+    risk: step.action === "assist" ? "medium" : "low",
+    confirmationRequired: step.action === "assist" ? true : false
   };
+
+  if (step.action === "assist") {
+    result.strategy = step.strategy ?? "auto";
+    result.observationMode = step.observationMode ?? "semantic-first";
+    result.instruction = step.instruction ?? "";
+    result.allowedActions = step.allowedActions ?? [
+      "click",
+      "fill",
+      "select",
+      "check",
+      "wait",
+      "assert"
+    ];
+    result.maxModelTurns = step.maxModelTurns ?? 5;
+    result.maxActions = step.maxActions ?? 20;
+    result.maxIterations = step.maxIterations ?? 1;
+    result.maxInputBytes = step.maxInputBytes ?? 65_536;
+    result.maxScreenshotCount = step.maxScreenshotCount ?? 0;
+    result.maxDurationMs = step.maxDurationMs ?? 60_000;
+    if (step.maxEstimatedCostUsd !== undefined) {
+      result.maxEstimatedCostUsd = step.maxEstimatedCostUsd;
+    }
+    if (step.stopCondition) {
+      result.stopCondition = step.stopCondition;
+    }
+    if (step.sensitiveActions && step.sensitiveActions.length > 0) {
+      result.sensitiveActions = [...step.sensitiveActions];
+    }
+  }
 
   const target = toTarget(step.target);
   if (target) {

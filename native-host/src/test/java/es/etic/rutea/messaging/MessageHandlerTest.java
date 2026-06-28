@@ -140,6 +140,34 @@ class MessageHandlerTest {
         assertThat(missing.path("payload").path("found").asBoolean()).isFalse();
     }
 
+    @Test
+    void proponeNavegacionIaConBackendFake() throws JsonProcessingException {
+        JsonNode response = handler.handle(envelope("ai.navigation.propose", SchemaValidatorTest.aiRequestJson()));
+
+        assertThat(response.path("ok").asBoolean()).isTrue();
+        JsonNode proposal = response.path("payload").path("proposal");
+        assertThat(proposal.path("status").asText()).isEqualTo("actions_proposed");
+        assertThat(proposal.path("strategyUsed").asText()).isEqualTo("structured");
+        assertThat(proposal.path("actions")).hasSize(3);
+        assertThat(proposal.path("actions").get(0).path("action").asText()).isEqualTo("select");
+        assertThat(proposal.path("actions").get(0).path("controlId").asText()).isEqualTo("c1");
+        assertThat(proposal.path("actions").get(0).path("value").asText()).isEqualTo("Junio");
+        assertThat(proposal.path("actions").get(1).path("controlId").asText()).isEqualTo("c2");
+        assertThat(proposal.path("actions").get(1).path("value").asText()).isEqualTo("Mes No Firmado");
+        assertThat(proposal.path("actions").get(2).path("action").asText()).isEqualTo("click");
+        assertThat(proposal.path("actions").get(2).path("actionId").asText()).isEqualTo("a3");
+        assertThat(validator.validateNativeResponse(response)).isEmpty();
+        assertThat(validator.validateAiNavigationProposal(proposal)).isEmpty();
+    }
+
+    @Test
+    void rechazaPeticionIaInvalida() throws JsonProcessingException {
+        JsonNode response = handler.handle(envelope("ai.navigation.propose", "{ \"schemaVersion\": 1 }"));
+
+        assertThat(response.path("ok").asBoolean()).isFalse();
+        assertThat(response.path("error").path("code").asText()).isEqualTo("VALIDATION_ERROR");
+    }
+
     /** Repositorio en memoria para pruebas del handler. */
     private static final class FakeRoutineRepository implements RoutineRepository {
         private final Map<String, String[]> store = new LinkedHashMap<>();

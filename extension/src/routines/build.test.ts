@@ -73,4 +73,39 @@ describe("buildRoutineFromRecording", () => {
       expect("value" in result.routine.steps[0]!).toBe(false);
     }
   });
+
+  it("convierte una instruccion IA grabada en un paso assist validable", () => {
+    const result = buildRoutineFromRecording(
+      "Busqueda asistida",
+      [
+        {
+          id: S1,
+          action: "assist",
+          url: "https://soi.gpex.es/inicio.php",
+          instruction: "Elegir junio y no firmados y pulsar Buscar"
+        }
+      ],
+      { id: ROUTINE_ID }
+    );
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.routine.allowedDomains).toEqual(["soi.gpex.es"]);
+      expect(result.routine.steps[0]).toMatchObject({
+        action: "assist",
+        strategy: "auto",
+        observationMode: "semantic-first",
+        instruction: "Elegir junio y no firmados y pulsar Buscar",
+        allowedActions: ["click", "fill", "select", "check", "wait", "assert"],
+        maxModelTurns: 5,
+        maxActions: 20,
+        maxIterations: 1,
+        maxInputBytes: 65_536,
+        maxScreenshotCount: 0,
+        maxDurationMs: 60_000,
+        risk: "medium",
+        confirmationRequired: true
+      });
+    }
+  });
 });

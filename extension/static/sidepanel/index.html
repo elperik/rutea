@@ -8,7 +8,7 @@
   </head>
   <body>
     <main>
-      <header>
+      <header class="app-header">
         <div>
           <p class="eyebrow">Navegación asistida</p>
           <h1>Rutea</h1>
@@ -22,12 +22,18 @@
           <button id="start" type="button">Iniciar</button>
           <button id="stop" type="button" class="secondary">Detener</button>
           <button id="clear" type="button" class="danger">Limpiar</button>
+          <button id="add-assist-recording" type="button" class="secondary">
+            Añadir instrucción IA
+          </button>
         </div>
       </section>
 
       <section aria-labelledby="host-title">
         <h2 id="host-title">Host local</h2>
-        <button id="ping-host" type="button" class="secondary">Probar conexión Java</button>
+        <div class="actions">
+          <button id="ping-host" type="button" class="secondary">Probar conexión Java</button>
+          <button id="open-control-panel" type="button" class="secondary">Abrir panel</button>
+        </div>
       </section>
 
       <section aria-labelledby="steps-title">
@@ -63,6 +69,7 @@
           <input id="editor-name" type="text" />
         </label>
         <ol id="editor-steps"></ol>
+        <button id="editor-add-assist" type="button" class="secondary">Añadir instrucción IA</button>
         <h3 class="editor-subtitle">Variables</h3>
         <ul id="editor-variables"></ul>
         <button id="editor-save" type="button">Guardar cambios</button>

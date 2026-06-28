@@ -1,6 +1,8 @@
 package es.etic.rutea.messaging;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.networknt.schema.JsonSchema;
 import com.networknt.schema.JsonSchemaFactory;
 import com.networknt.schema.SpecVersion;
@@ -24,14 +26,25 @@ public final class SchemaValidator {
     private final JsonSchema nativeResponseSchema;
     private final JsonSchema helloRequestSchema;
     private final JsonSchema routineSchema;
+    private final JsonSchema screenContextSchema;
+    private final JsonSchema aiNavigationRequestSchema;
+    private final JsonSchema aiNavigationProposalSchema;
+    private final JsonSchema aiConfigSchema;
 
     public SchemaValidator() {
         JsonSchemaFactory factory = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V202012);
         this.nativeMessageSchema = load(factory, "/schemas/contracts/native-message.schema.json");
         this.nativeResponseSchema = load(factory, "/schemas/contracts/native-response.schema.json");
         this.routineSchema = load(factory, "/schemas/routine.schema.json");
+        this.screenContextSchema = load(factory, "/schemas/contracts/screen-context.schema.json");
+        this.aiNavigationRequestSchema = loadAiNavigationRequest(factory);
+        this.aiNavigationProposalSchema =
+                load(factory, "/schemas/contracts/ai-navigation-proposal.schema.json");
         this.helloRequestSchema =
                 loadSubschema(factory, "/schemas/contracts/hello.schema.json", "helloRequest");
+        // Esquema host-local: la configuracion IA no es un contrato compartido con la
+        // extension porque puede contener claves; vive bajo /schemas-local/.
+        this.aiConfigSchema = load(factory, "/schemas-local/ai-config.schema.json");
     }
 
     public List<String> validateNativeMessage(JsonNode node) {
@@ -48,6 +61,22 @@ public final class SchemaValidator {
 
     public List<String> validateRoutine(JsonNode node) {
         return collect(routineSchema.validate(node));
+    }
+
+    public List<String> validateScreenContext(JsonNode node) {
+        return collect(screenContextSchema.validate(node));
+    }
+
+    public List<String> validateAiNavigationRequest(JsonNode node) {
+        return collect(aiNavigationRequestSchema.validate(node));
+    }
+
+    public List<String> validateAiNavigationProposal(JsonNode node) {
+        return collect(aiNavigationProposalSchema.validate(node));
+    }
+
+    public List<String> validateAiConfig(JsonNode node) {
+        return collect(aiConfigSchema.validate(node));
     }
 
     private static List<String> collect(Set<ValidationMessage> messages) {
@@ -78,6 +107,19 @@ public final class SchemaValidator {
             return factory.getSchema(subschema);
         } catch (IOException exception) {
             throw new UncheckedIOException("No se pudo cargar el esquema " + resource, exception);
+        }
+    }
+
+    private static JsonSchema loadAiNavigationRequest(JsonSchemaFactory factory) {
+        ObjectMapper mapper = new ObjectMapper();
+        try (InputStream requestStream = open("/schemas/contracts/ai-navigation-request.schema.json");
+                InputStream screenStream = open("/schemas/contracts/screen-context.schema.json")) {
+            ObjectNode request = (ObjectNode) mapper.readTree(requestStream);
+            JsonNode screenContext = mapper.readTree(screenStream);
+            ((ObjectNode) request.path("properties")).set("screenContext", screenContext);
+            return factory.getSchema(request);
+        } catch (IOException exception) {
+            throw new UncheckedIOException("No se pudo cargar el esquema de navegación IA", exception);
         }
     }
 

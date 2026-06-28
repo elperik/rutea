@@ -9,7 +9,10 @@ import type {
   HelloRequest,
   HelloResult,
   Routine,
-  RoutineExport
+  RoutineExport,
+  ScreenContext,
+  AiNavigationRequest,
+  AiNavigationProposal
 } from "./types.js";
 
 export type {
@@ -19,6 +22,9 @@ export type {
   HelloResult,
   Routine,
   RoutineExport,
+  ScreenContext,
+  AiNavigationRequest,
+  AiNavigationProposal,
   Variable,
   Step,
   Target,
@@ -80,6 +86,20 @@ export function validateRoutine(data: unknown): ValidationResult<Routine> {
 
 export function validateRoutineExport(data: unknown): ValidationResult<RoutineExport> {
   return validateWith<RoutineExport>(validators.routineExport, data);
+}
+
+export function validateScreenContext(data: unknown): ValidationResult<ScreenContext> {
+  return validateWith<ScreenContext>(validators.screenContext, data);
+}
+
+export function validateAiNavigationRequest(data: unknown): ValidationResult<AiNavigationRequest> {
+  return validateWith<AiNavigationRequest>(validators.aiNavigationRequest, data);
+}
+
+export function validateAiNavigationProposal(
+  data: unknown
+): ValidationResult<AiNavigationProposal> {
+  return validateWith<AiNavigationProposal>(validators.aiNavigationProposal, data);
 }
 
 /** Comprueba que el valor serializado no supere el límite de tamaño del protocolo. */

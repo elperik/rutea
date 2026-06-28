@@ -3,7 +3,7 @@
 
 import type { Routine, Step } from "../contracts/index.js";
 
-export type StepPatch = Partial<Pick<Step, "risk" | "confirmationRequired" | "timeoutMs">>;
+export type StepPatch = Partial<Step>;
 
 export function renameRoutine(routine: Routine, name: string): Routine {
   return { ...routine, name: name.trim() };
@@ -40,13 +40,18 @@ export function updateStep(routine: Routine, index: number, patch: StepPatch): R
       return step;
     }
     const updated: Step = { ...step, ...patch };
-    // Un timeout sin valor se elimina en vez de quedar como `undefined`.
-    if (updated.timeoutMs === undefined) {
-      delete updated.timeoutMs;
-    }
+    removeUndefinedOptionalFields(updated);
     return updated;
   });
   return { ...routine, steps };
+}
+
+function removeUndefinedOptionalFields(step: Step): void {
+  for (const key of Object.keys(step) as (keyof Step)[]) {
+    if (step[key] === undefined) {
+      delete step[key];
+    }
+  }
 }
 
 function inRange(routine: Routine, index: number): boolean {
