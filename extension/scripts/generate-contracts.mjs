@@ -104,12 +104,7 @@ async function main() {
     { name: "ScreenContext", schema: schemas.screenContext },
     {
       name: "AiNavigationRequest",
-      schema: bundleExternalSchema(
-        schemas.aiNavigationRequest,
-        "screenContext",
-        schemas.screenContext
-      ),
-      declareExternallyReferenced: false
+      schema: withExternalType(schemas.aiNavigationRequest, "screenContext", "ScreenContext")
     },
     { name: "AiNavigationProposal", schema: schemas.aiNavigationProposal },
     { name: "HelloRequest", schema: withRoot(schemas.hello, schemas.hello.$defs.helloRequest) },
@@ -121,7 +116,7 @@ async function main() {
     const ts = await compileType(stripNaming(target.schema), target.name, {
       bannerComment: "",
       additionalProperties: false,
-      declareExternallyReferenced: target.declareExternallyReferenced ?? true,
+      declareExternallyReferenced: true,
       $refOptions: { resolve: { http: false } }
     });
     typeBlocks.push(ts.trim());
@@ -143,35 +138,12 @@ function withRoot(parent, subschema) {
   return { $schema: parent.$schema, ...subschema };
 }
 
-// Inserta un esquema externo en `$defs` para que json-schema-to-typescript no necesite HTTP.
-function bundleExternalSchema(schema, propertyName, referencedSchema) {
+// Para la generación TypeScript, reutiliza un tipo ya generado sin duplicar sus declaraciones.
+// El validador runtime sigue compilándose contra el `$ref` canónico original.
+function withExternalType(schema, propertyName, typeName) {
   const clone = structuredClone(schema);
-  const bundled = structuredClone(referencedSchema);
-  delete bundled.$schema;
-  delete bundled.$id;
-  delete bundled.title;
-
-  const rewritten = rewriteInternalRefs(bundled, `#/$defs/${propertyName}/$defs/`);
-  clone.$defs = { ...clone.$defs, [propertyName]: rewritten };
-  clone.properties[propertyName] = { $ref: `#/$defs/${propertyName}` };
+  clone.properties[propertyName] = { tsType: typeName };
   return clone;
-}
-
-function rewriteInternalRefs(value, defsPrefix) {
-  if (Array.isArray(value)) {
-    return value.map((item) => rewriteInternalRefs(item, defsPrefix));
-  }
-  if (value && typeof value === "object") {
-    return Object.fromEntries(
-      Object.entries(value).map(([key, child]) => [
-        key,
-        key === "$ref" && typeof child === "string" && child.startsWith("#/$defs/")
-          ? defsPrefix + child.slice("#/$defs/".length)
-          : rewriteInternalRefs(child, defsPrefix)
-      ])
-    );
-  }
-  return value;
 }
 
 // Elimina title/$id para que el nombre del tipo lo fije el generador, no el esquema.
