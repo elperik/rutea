@@ -7,11 +7,15 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import es.etic.rutea.messaging.MessageCodec;
 import es.etic.rutea.messaging.MessageHandler;
 import es.etic.rutea.messaging.SchemaValidator;
+import es.etic.rutea.persistence.Database;
+import es.etic.rutea.persistence.SqliteRoutineRepository;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.sql.SQLException;
 import java.time.Clock;
 import java.util.UUID;
 
@@ -34,15 +38,28 @@ public final class NativeHostMain {
 
     public static void main(String[] args) {
         ObjectMapper mapper = new ObjectMapper();
-        MessageHandler handler =
-                new MessageHandler(mapper, new SchemaValidator(), Clock.systemUTC());
-        NativeHostMain host = new NativeHostMain(mapper, handler);
-        try {
+        try (Database database = new Database(defaultDatabaseFile())) {
+            MessageHandler handler =
+                    new MessageHandler(
+                            mapper,
+                            new SchemaValidator(),
+                            Clock.systemUTC(),
+                            new SqliteRoutineRepository(database));
+            NativeHostMain host = new NativeHostMain(mapper, handler);
             host.run(System.in, System.out);
-        } catch (IOException exception) {
+        } catch (IOException | SQLException exception) {
             System.err.println("Rutea Native Host finalizado: " + exception.getMessage());
             System.exit(1);
         }
+    }
+
+    private static Path defaultDatabaseFile() {
+        String localAppData = System.getenv("LOCALAPPDATA");
+        Path base =
+                localAppData != null && !localAppData.isBlank()
+                        ? Path.of(localAppData, "Rutea")
+                        : Path.of(System.getProperty("user.home"), ".rutea");
+        return base.resolve("rutea.sqlite");
     }
 
     void run(InputStream input, OutputStream output) throws IOException {

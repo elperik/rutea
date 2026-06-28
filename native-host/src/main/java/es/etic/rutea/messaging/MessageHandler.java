@@ -1,12 +1,17 @@
 package es.etic.rutea.messaging;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import es.etic.rutea.persistence.PersistenceException;
+import es.etic.rutea.persistence.RoutineRepository;
+import es.etic.rutea.persistence.RoutineSummary;
 
 import java.time.Clock;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -22,11 +27,14 @@ public final class MessageHandler {
     private final ObjectMapper mapper;
     private final SchemaValidator validator;
     private final Clock clock;
+    private final RoutineRepository routines;
 
-    public MessageHandler(ObjectMapper mapper, SchemaValidator validator, Clock clock) {
+    public MessageHandler(
+            ObjectMapper mapper, SchemaValidator validator, Clock clock, RoutineRepository routines) {
         this.mapper = mapper;
         this.validator = validator;
         this.clock = clock;
+        this.routines = routines;
     }
 
     public JsonNode handle(JsonNode request) {
@@ -38,10 +46,81 @@ public final class MessageHandler {
         }
 
         String type = request.path("type").asText();
-        if ("hello".equals(type)) {
-            return handleHello(request, correlationId);
+        try {
+            return switch (type) {
+                case "hello" -> handleHello(request, correlationId);
+                case "routine.save" -> handleRoutineSave(request, correlationId);
+                case "routine.list" -> handleRoutineList(correlationId);
+                case "routine.get" -> handleRoutineGet(request, correlationId);
+                case "routine.delete" -> handleRoutineDelete(request, correlationId);
+                default ->
+                        error(correlationId, "VALIDATION_ERROR", "Tipo de mensaje no soportado: " + type);
+            };
+        } catch (PersistenceException exception) {
+            return error(correlationId, "PERSISTENCE_ERROR", "Error de persistencia");
         }
-        return error(correlationId, "VALIDATION_ERROR", "Tipo de mensaje no soportado: " + type);
+    }
+
+    private JsonNode handleRoutineSave(JsonNode request, String correlationId) {
+        JsonNode routine = request.path("payload").path("routine");
+        List<String> routineErrors = validator.validateRoutine(routine);
+        if (!routineErrors.isEmpty()) {
+            return error(correlationId, "VALIDATION_ERROR", "Rutina inválida: " + join(routineErrors));
+        }
+
+        String id = routine.path("id").asText();
+        String name = routine.path("name").asText();
+        String updatedAt = clock.instant().toString();
+        String json;
+        try {
+            json = mapper.writeValueAsString(routine);
+        } catch (JsonProcessingException exception) {
+            return error(correlationId, "INTERNAL_ERROR", "No se pudo serializar la rutina");
+        }
+
+        routines.save(id, name, json, updatedAt);
+
+        ObjectNode payload = mapper.createObjectNode();
+        payload.put("id", id);
+        payload.put("updatedAt", updatedAt);
+        return success(correlationId, payload);
+    }
+
+    private JsonNode handleRoutineList(String correlationId) {
+        ObjectNode payload = mapper.createObjectNode();
+        ArrayNode array = payload.putArray("routines");
+        for (RoutineSummary summary : routines.list()) {
+            ObjectNode node = array.addObject();
+            node.put("id", summary.id());
+            node.put("name", summary.name());
+            node.put("updatedAt", summary.updatedAt());
+        }
+        return success(correlationId, payload);
+    }
+
+    private JsonNode handleRoutineGet(JsonNode request, String correlationId) {
+        String id = request.path("payload").path("id").asText();
+        Optional<String> json = routines.findJson(id);
+        ObjectNode payload = mapper.createObjectNode();
+        if (json.isEmpty()) {
+            payload.put("found", false);
+            return success(correlationId, payload);
+        }
+        try {
+            payload.put("found", true);
+            payload.set("routine", mapper.readTree(json.get()));
+        } catch (JsonProcessingException exception) {
+            return error(correlationId, "PERSISTENCE_ERROR", "Rutina almacenada corrupta");
+        }
+        return success(correlationId, payload);
+    }
+
+    private JsonNode handleRoutineDelete(JsonNode request, String correlationId) {
+        String id = request.path("payload").path("id").asText();
+        boolean deleted = routines.delete(id);
+        ObjectNode payload = mapper.createObjectNode();
+        payload.put("deleted", deleted);
+        return success(correlationId, payload);
     }
 
     private JsonNode handleHello(JsonNode request, String correlationId) {
